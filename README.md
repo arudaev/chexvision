@@ -55,15 +55,16 @@ We implement and compare two deep learning approaches on two distinct tasks:
 
 ```
 chexvision/
-├── .github/workflows/     # CI/CD pipelines
+├── .github/workflows/     # CI/CD (lint, test, HF Space deploy)
 ├── src/
 │   ├── data/              # Dataset, transforms, download utilities
 │   ├── models/            # Model 1 (scratch) & Model 2 (transfer)
 │   ├── training/          # Training loop, metrics, evaluation
 │   └── utils/             # Visualization (Grad-CAM, plots)
+├── scripts/               # CLI tools (EDA, model upload, cloud dispatch)
+├── kaggle/                # Kaggle GPU kernel configs for training
 ├── app/                   # Streamlit demo application
-├── configs/               # Hyperparameter configurations
-├── notebooks/             # EDA & training notebooks
+├── configs/               # Hyperparameter configurations (YAML)
 ├── tests/                 # Unit tests
 ├── Dockerfile             # Container for HF Space deployment
 ├── requirements.txt       # Dependencies
@@ -82,35 +83,53 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
-### 2. Download Dataset
+### 2. Run EDA (local, lightweight)
 
 ```bash
-python -m src.data.download --output-dir data/
+python scripts/eda.py --num-samples 5000 --output-dir results/eda
 ```
 
-This downloads the NIH Chest X-ray14 dataset from HuggingFace and prepares train/val/test splits.
+Streams metadata from HuggingFace and generates plots locally. No GPU needed.
 
-### 3. Train Models
+### 3. Train Models (cloud GPU)
+
+Training runs on **Kaggle GPU** (free 30h/week) — never on local hardware:
 
 ```bash
-# Model 1: Custom CNN from scratch
-python -m src.training.trainer --config configs/scratch.yaml
+# Dispatch training to Kaggle
+python scripts/dispatch.py kaggle push scratch    # Custom CNN
+python scripts/dispatch.py kaggle push transfer   # DenseNet-121
 
-# Model 2: DenseNet-121 transfer learning
-python -m src.training.trainer --config configs/transfer.yaml
+# Check status
+python scripts/dispatch.py kaggle status scratch
+
+# Download results
+python scripts/dispatch.py kaggle output scratch
 ```
 
-### 4. Evaluate & Compare
+Or trigger the data pipeline on HuggingFace:
+[Data Pipeline Space](https://huggingface.co/spaces/HlexNC/chexvision-data-pipeline)
+
+### 4. Upload Models to HuggingFace
+
+```bash
+python scripts/push_models.py --checkpoint checkpoints/CheXVision-ResNet_best.pth
+python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.pth
+```
+
+### 5. Evaluate & Compare
 
 ```bash
 python -m src.training.evaluate --model-dir checkpoints/ --compare
 ```
 
-### 5. Run Streamlit Demo
+### 6. Run Streamlit Demo
 
 ```bash
 streamlit run app/app.py
 ```
+
+Or visit the live demo: [HF Space](https://huggingface.co/spaces/HlexNC/chexvision-demo)
 
 ## Dataset
 
@@ -160,13 +179,17 @@ Following the CheXNet approach (Rajpurkar et al., 2017):
 
 ## Infrastructure
 
+All heavy compute runs in the cloud. Local machines are for code editing and lightweight scripts only.
+
 | Component | Platform | Purpose |
 |-----------|----------|---------|
 | Source code | [GitHub](https://github.com/arudaev/chexvision) | Version control, CI/CD |
-| Dataset | [HuggingFace Dataset](https://huggingface.co/datasets/HlexNC/chest-xray-14) | Processed dataset hosting |
+| Dataset | [HF Dataset](https://huggingface.co/datasets/HlexNC/chest-xray-14) | Processed 224x224 parquet shards |
+| Data pipeline | [HF Space](https://huggingface.co/spaces/HlexNC/chexvision-data-pipeline) | One-time dataset repackaging (runs on HF CPU) |
+| Training | [Kaggle GPU kernels](kaggle/) | Model training (free T4/P100 GPU) |
 | Models | [HF: Scratch](https://huggingface.co/HlexNC/chexvision-scratch), [HF: DenseNet](https://huggingface.co/HlexNC/chexvision-densenet) | Trained model hosting |
 | Demo | [HF Space](https://huggingface.co/spaces/HlexNC/chexvision-demo) | Streamlit interactive demo |
-| CI/CD | GitHub Actions | Linting, testing, deployment |
+| CI/CD | GitHub Actions | Linting, testing, auto-deploy |
 
 ## Team
 
