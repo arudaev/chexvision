@@ -18,20 +18,29 @@ CheXVision is a deep learning project for chest X-ray pathology detection using 
 ## Directory Structure
 
 ```
-src/
-├── data/           # Dataset loading, transforms, download scripts
-│   ├── dataset.py  # ChestXrayDataset (PyTorch Dataset class)
-│   ├── transforms.py # Data augmentation pipelines
-│   └── download.py # Download from HuggingFace Hub
+src/                          # Core library
+├── data/
+│   ├── dataset.py            # ChestXrayDataset (PyTorch Dataset class)
+│   ├── transforms.py         # Data augmentation pipelines
+│   └── download.py           # Download from HuggingFace Hub
 ├── models/
-│   ├── scratch_cnn.py     # Model 1: Custom ResNet-style CNN
-│   └── densenet_transfer.py # Model 2: DenseNet-121 fine-tuning
+│   ├── scratch_cnn.py        # Model 1: Custom ResNet-style CNN
+│   └── densenet_transfer.py  # Model 2: DenseNet-121 fine-tuning
 ├── training/
-│   ├── trainer.py   # Main training loop with logging
-│   ├── metrics.py   # AUC-ROC, F1, confusion matrix computation
-│   └── evaluate.py  # Model evaluation and comparison script
+│   ├── trainer.py            # Training loop (cloud-only guard enforced)
+│   ├── metrics.py            # AUC-ROC, F1, confusion matrix
+│   └── evaluate.py           # Model evaluation and comparison
 └── utils/
-    └── visualization.py  # Grad-CAM, ROC curves, training plots
+    └── visualization.py      # Grad-CAM, ROC curves, training plots
+
+scripts/                      # CLI tools (run locally)
+├── eda.py                    # EDA — streams from HF, generates plots
+├── dispatch.py               # Dispatch training to Kaggle GPU
+└── push_models.py            # Upload checkpoints to HF Hub
+
+kaggle/                       # Kaggle kernel configs (run on cloud GPU)
+├── train_scratch/            # Custom CNN training kernel
+└── train_transfer/           # DenseNet-121 training kernel
 ```
 
 ## Coding Conventions
@@ -55,26 +64,29 @@ src/
 ## Running the Project
 
 ```bash
-# Install
+# Install (local)
 pip install -e ".[dev]"
 
-# Download data
-python -m src.data.download --output-dir data/
+# EDA — runs locally, streams metadata from HF (lightweight)
+python scripts/eda.py --num-samples 5000 --output-dir results/eda
 
-# Train
-python -m src.training.trainer --config configs/scratch.yaml
-python -m src.training.trainer --config configs/transfer.yaml
+# Lint & test — runs locally
+ruff check src/ tests/ scripts/
+CHEXVISION_ALLOW_LOCAL=1 pytest tests/ -v
 
-# Evaluate
-python -m src.training.evaluate --model-dir checkpoints/ --compare
+# Dispatch training to Kaggle GPU (requires `pip install kaggle` + API key)
+python scripts/dispatch.py kaggle push scratch
+python scripts/dispatch.py kaggle push transfer
+python scripts/dispatch.py kaggle status scratch
 
-# Lint & test
-ruff check src/ tests/
-pytest tests/ -v
+# Upload trained models to HF Hub
+python scripts/push_models.py --checkpoint checkpoints/CheXVision-ResNet_best.pth
 
-# Demo
+# Demo — runs locally or on HF Space
 streamlit run app/app.py
 ```
+
+**Never run `src.training.trainer` directly on a local machine.** The cloud guard will block it.
 
 ## Configuration
 
@@ -89,10 +101,11 @@ All hyperparameters live in `configs/*.yaml`. Key parameters:
 
 ## HuggingFace Resources
 
-- Dataset: `HlexNC/chest-xray-14`
+- Dataset: `HlexNC/chest-xray-14` (preprocessed 224x224 parquet shards)
 - Model (scratch): `HlexNC/chexvision-scratch`
 - Model (transfer): `HlexNC/chexvision-densenet`
 - Demo Space: `HlexNC/chexvision-demo`
+- Data Pipeline Space: `HlexNC/chexvision-data-pipeline` (one-time repackaging job)
 
 ## API Access
 
@@ -129,23 +142,30 @@ You have full read/write access to both platforms. Use the APIs freely for any a
 
 **All heavy compute (training, dataset processing, large-scale evaluation) MUST run in the cloud. Never on local dev machines.**
 
-| Task | Where to Run | Why |
+| Task | Where to Run | How |
 |------|-------------|-----|
-| Training | Google Colab (free T4 GPU) | 112k images + deep CNNs need GPU; keeps runs reproducible via shared notebooks |
-| Dataset download/processing | Google Colab or HF Space | 45GB dataset, not practical for local storage |
-| Large-scale evaluation | Google Colab | GPU-accelerated inference on full test set |
-| Streamlit demo | HF Space (`HlexNC/chexvision-demo`) | Always-on public demo, auto-deployed via GitHub Actions |
+| Dataset repackaging | HF Space (`chexvision-data-pipeline`) | One-time Gradio job on HF CPU |
+| Training | Kaggle GPU kernels | `python scripts/dispatch.py kaggle push scratch` |
+| Large-scale evaluation | Kaggle GPU | Same kernel, or separate eval kernel |
+| Streamlit demo | HF Space (`chexvision-demo`) | Auto-deployed via GitHub Actions |
 | Linting, unit tests | GitHub Actions CI | Automated on every push/PR |
+| EDA | Local (lightweight) | `python scripts/eda.py` — streams metadata only |
 | Local dev | Code editing, small tests only | `CHEXVISION_ALLOW_LOCAL=1 pytest tests/ -v` |
 
-The training script (`src/training/trainer.py`) enforces this: it will **exit with an error** if run on a local CPU machine. Override with `CHEXVISION_ALLOW_LOCAL=1` only for unit tests.
+The training script (`src/training/trainer.py`) enforces this: it will **exit with an error** if run on a local CPU machine without GPU. Override with `CHEXVISION_ALLOW_LOCAL=1` for unit tests only.
 
-### Running on Google Colab
+### Training on Kaggle
 
-All notebooks in `notebooks/` have Colab badges and setup cells. Open them directly from GitHub:
-- `01_eda.ipynb` — Exploratory data analysis
-- `02_train_scratch.ipynb` — Model 1 training (custom CNN)
-- `03_train_transfer.ipynb` — Model 2 training (DenseNet-121)
+Kernel configs live in `kaggle/`. Each has a `kernel-metadata.json` (GPU enabled, internet enabled) and a `script.py`. The script clones the repo, downloads data, trains, and uploads the checkpoint to HF Hub.
+
+```bash
+pip install kaggle  # one-time
+# Set up ~/.kaggle/kaggle.json with your API key
+
+python scripts/dispatch.py kaggle push scratch    # dispatches to Kaggle GPU
+python scripts/dispatch.py kaggle status scratch   # check progress
+python scripts/dispatch.py kaggle output scratch   # download output
+```
 
 ### Deploying to HF Space
 
@@ -153,6 +173,7 @@ Push to `main` and the GitHub Action (`.github/workflows/deploy-space.yml`) auto
 
 ## Important Notes
 
-- The NIH Chest X-ray14 dataset is ~45GB raw. Use HuggingFace streaming mode or the Colab-cached version.
+- The NIH Chest X-ray14 dataset is ~45GB raw. Our HF dataset repo stores preprocessed 224x224 parquet shards (~5GB).
+- The data pipeline Space (`chexvision-data-pipeline`) handles repackaging — run it once, then the dataset is ready.
 - Always set random seeds for reproducibility.
 - The report must justify every architectural decision — keep code comments explaining "why" not "what".

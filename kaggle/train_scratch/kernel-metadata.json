@@ -1,0 +1,13 @@
+{
+  "id": "INSERT_KAGGLE_USERNAME/chexvision-train-scratch",
+  "title": "CheXVision Train Scratch CNN",
+  "code_file": "script.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "competition_sources": [],
+  "dataset_sources": [],
+  "kernel_data_sources": []
+}
