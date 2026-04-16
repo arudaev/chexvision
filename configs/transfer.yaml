@@ -1,0 +1,40 @@
+# CheXVision — Model 2: DenseNet-121 Transfer Learning (CheXNet)
+
+_defaults_: default.yaml
+
+model:
+  type: "densenet"
+  name: "CheXVision-DenseNet"
+
+  # DenseNet-121 pretrained on ImageNet
+  architecture:
+    backbone: "densenet121"
+    pretrained: true
+    freeze_features: false  # Fine-tune all layers
+    dropout: 0.3
+
+  # Fine-tuning strategy
+  fine_tuning:
+    # Phase 1: Freeze backbone, train classifier (5 epochs)
+    freeze_epochs: 5
+    freeze_lr: 0.001
+    # Phase 2: Unfreeze all, lower LR (remaining epochs)
+    unfreeze_lr: 0.0001
+
+  # Dual classification heads
+  heads:
+    multilabel:
+      num_classes: 14
+      activation: "sigmoid"
+    binary:
+      num_classes: 1
+      activation: "sigmoid"
+
+training:
+  epochs: 30
+  batch_size: 32
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  optimizer: "adamw"
+  scheduler: "cosine"
+  warmup_epochs: 3

@@ -1,0 +1,68 @@
+# CheXVision — Default Configuration
+# Override per-model in scratch.yaml / transfer.yaml
+
+seed: 42
+
+data:
+  dataset_name: "HlexNC/chest-xray-14"
+  image_size: 224
+  num_workers: 4
+  pin_memory: true
+  train_split: 0.7
+  val_split: 0.1
+  test_split: 0.2
+
+  augmentation:
+    horizontal_flip: true
+    rotation_degrees: 10
+    color_jitter:
+      brightness: 0.2
+      contrast: 0.2
+
+  # 14 pathology labels
+  labels:
+    - Atelectasis
+    - Cardiomegaly
+    - Effusion
+    - Infiltration
+    - Mass
+    - Nodule
+    - Pneumonia
+    - Pneumothorax
+    - Consolidation
+    - Edema
+    - Emphysema
+    - Fibrosis
+    - Pleural_Thickening
+    - Hernia
+
+training:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer: "adamw"
+  scheduler: "cosine"
+  warmup_epochs: 5
+  early_stopping_patience: 10
+  gradient_clip_norm: 1.0
+
+  # Task weights for combined loss
+  multilabel_weight: 1.0
+  binary_weight: 0.5
+
+evaluation:
+  primary_metric: "auc_roc_macro"
+  threshold: 0.5
+
+logging:
+  log_dir: "logs/"
+  checkpoint_dir: "checkpoints/"
+  save_every_n_epochs: 5
+  log_every_n_steps: 100
+
+huggingface:
+  dataset_repo: "HlexNC/chest-xray-14"
+  scratch_model_repo: "HlexNC/chexvision-scratch"
+  transfer_model_repo: "HlexNC/chexvision-densenet"
+  space_repo: "HlexNC/chexvision-demo"
