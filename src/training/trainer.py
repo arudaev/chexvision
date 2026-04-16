@@ -1,13 +1,18 @@
 """Main training loop for CheXVision models.
 
 Uses raw PyTorch (no Lightning) so every design decision is explicit and justifiable in the report.
+
+CLOUD-ONLY: This script is designed to run on cloud GPU environments (Google Colab, HF Spaces,
+university cluster). Do NOT run training on local machines — use notebooks in Colab instead.
 """
 
 from __future__ import annotations
 
 import argparse
 import logging
+import os
 import random
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +30,42 @@ from src.models.scratch_cnn import CheXVisionScratch
 from src.training.metrics import combine_losses, compute_binary_metrics, compute_multilabel_metrics
 
 logger = logging.getLogger(__name__)
+
+
+def _check_cloud_environment() -> None:
+    """Verify we're running in a cloud/GPU environment, not a local dev machine.
+
+    Raises SystemExit if running locally without an explicit override.
+    Set CHEXVISION_ALLOW_LOCAL=1 to bypass (for unit tests only).
+    """
+    allow_local = os.environ.get("CHEXVISION_ALLOW_LOCAL", "0") == "1"
+    if allow_local:
+        return
+
+    in_colab = "google.colab" in sys.modules or os.environ.get("COLAB_GPU") is not None
+    in_kaggle = os.environ.get("KAGGLE_KERNEL_RUN_TYPE") is not None
+    in_hf_space = os.environ.get("SPACE_ID") is not None
+    in_github_actions = os.environ.get("GITHUB_ACTIONS") is not None
+    in_slurm = os.environ.get("SLURM_JOB_ID") is not None  # university cluster
+    has_gpu = torch.cuda.is_available()
+
+    is_cloud = in_colab or in_kaggle or in_hf_space or in_github_actions or in_slurm
+
+    if not is_cloud and not has_gpu:
+        logger.error(
+            "CLOUD-ONLY POLICY: Training must run on cloud GPU environments "
+            "(Google Colab, Kaggle, HF Spaces, university SLURM cluster). "
+            "Local CPU training on 112k images is impractical. "
+            "Use the Colab notebooks in notebooks/ instead. "
+            "Override with CHEXVISION_ALLOW_LOCAL=1 for testing only."
+        )
+        sys.exit(1)
+
+    if not is_cloud and has_gpu:
+        logger.warning(
+            "Local GPU detected. Training will proceed, but consider using "
+            "Google Colab or university cluster for reproducibility and collaboration."
+        )
 
 
 def set_seed(seed: int) -> None:
@@ -168,7 +209,8 @@ def evaluate(
 
 
 def train(config: dict) -> None:
-    """Full training pipeline."""
+    """Full training pipeline. Must run on cloud GPU (Colab, HF, SLURM)."""
+    _check_cloud_environment()
     set_seed(config.get("seed", 42))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
