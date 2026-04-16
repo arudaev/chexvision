@@ -94,9 +94,65 @@ All hyperparameters live in `configs/*.yaml`. Key parameters:
 - Model (transfer): `HlexNC/chexvision-densenet`
 - Demo Space: `HlexNC/chexvision-demo`
 
+## API Access
+
+Tokens are stored in `.env` at the project root. Load them with:
+
+```python
+from dotenv import load_dotenv; load_dotenv()
+```
+
+Or read them directly from `.env` for shell/curl usage.
+
+### GitHub API
+
+- **Token env var**: `GITHUB_TOKEN`
+- **Repo**: `arudaev/chexvision`
+- Use for: creating issues, managing PRs, triggering workflows, setting secrets, reading CI status, managing releases
+- Example: `curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/arudaev/chexvision/actions/runs`
+
+### HuggingFace API
+
+- **Token env var**: `HF_TOKEN`
+- **Owner**: `HlexNC`
+- Use for: uploading datasets, pushing models, managing the Space, creating/managing repos, querying dataset/model info
+- Repos:
+  - Dataset: `HlexNC/chest-xray-14`
+  - Model (scratch): `HlexNC/chexvision-scratch`
+  - Model (transfer): `HlexNC/chexvision-densenet`
+  - Space (Streamlit demo): `HlexNC/chexvision-demo`
+- Example: `curl -H "Authorization: Bearer $HF_TOKEN" https://huggingface.co/api/models/HlexNC/chexvision-scratch`
+
+You have full read/write access to both platforms. Use the APIs freely for any automation — CI/CD, dataset uploads, model pushes, repo management, etc.
+
+## Cloud-Only Compute Policy
+
+**All heavy compute (training, dataset processing, large-scale evaluation) MUST run in the cloud. Never on local dev machines.**
+
+| Task | Where to Run | Why |
+|------|-------------|-----|
+| Training | Google Colab (free T4 GPU) | 112k images + deep CNNs need GPU; keeps runs reproducible via shared notebooks |
+| Dataset download/processing | Google Colab or HF Space | 45GB dataset, not practical for local storage |
+| Large-scale evaluation | Google Colab | GPU-accelerated inference on full test set |
+| Streamlit demo | HF Space (`HlexNC/chexvision-demo`) | Always-on public demo, auto-deployed via GitHub Actions |
+| Linting, unit tests | GitHub Actions CI | Automated on every push/PR |
+| Local dev | Code editing, small tests only | `CHEXVISION_ALLOW_LOCAL=1 pytest tests/ -v` |
+
+The training script (`src/training/trainer.py`) enforces this: it will **exit with an error** if run on a local CPU machine. Override with `CHEXVISION_ALLOW_LOCAL=1` only for unit tests.
+
+### Running on Google Colab
+
+All notebooks in `notebooks/` have Colab badges and setup cells. Open them directly from GitHub:
+- `01_eda.ipynb` — Exploratory data analysis
+- `02_train_scratch.ipynb` — Model 1 training (custom CNN)
+- `03_train_transfer.ipynb` — Model 2 training (DenseNet-121)
+
+### Deploying to HF Space
+
+Push to `main` and the GitHub Action (`.github/workflows/deploy-space.yml`) auto-deploys to the HF Space.
+
 ## Important Notes
 
-- The NIH Chest X-ray14 dataset is ~45GB raw. Use the HuggingFace cached/processed version.
-- Training requires GPU. Use Google Colab, university cluster, or local GPU.
+- The NIH Chest X-ray14 dataset is ~45GB raw. Use HuggingFace streaming mode or the Colab-cached version.
 - Always set random seeds for reproducibility.
 - The report must justify every architectural decision — keep code comments explaining "why" not "what".
