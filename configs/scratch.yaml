@@ -1,0 +1,36 @@
+# CheXVision — Model 1: Custom CNN From Scratch
+
+_defaults_: default.yaml
+
+model:
+  type: "scratch"
+  name: "CheXVision-ResNet"
+
+  # Custom ResNet-style architecture
+  architecture:
+    input_channels: 1  # Grayscale X-rays
+    initial_filters: 64
+    block_config: [2, 2, 2, 2]  # Number of residual blocks per stage
+    filter_sizes: [64, 128, 256, 512]
+    dropout: 0.5
+    activation: "relu"
+    use_batch_norm: true
+    global_avg_pool: true
+
+  # Dual classification heads
+  heads:
+    multilabel:
+      num_classes: 14
+      activation: "sigmoid"
+    binary:
+      num_classes: 1
+      activation: "sigmoid"
+
+training:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer: "adamw"
+  scheduler: "cosine"
+  warmup_epochs: 5
