@@ -62,17 +62,17 @@ def load_hf_token(required: bool = False) -> str | None:
             return _set_hf_token_env(token)
 
     # 2. Token file from an attached Kaggle dataset source.
-    #    Create the private dataset once at kaggle.com/datasets/new, upload a plain-text
-    #    file named ``hf_token.txt`` that contains only the token, and add
-    #    ``"hlexnc/chexvision-secrets"`` to ``dataset_sources`` in kernel-metadata.json.
-    #    After that, every automated ``kaggle kernels push`` will have the token available
-    #    here without any manual secrets UI steps.
-    token_file = Path("/kaggle/input/chexvision-secrets/hf_token.txt")
-    if token_file.exists():
-        token = token_file.read_text(encoding="utf-8").strip()
-        if token:
-            print(f"[hub] Loaded HF_TOKEN from Kaggle dataset source: {token_file}")
-            return _set_hf_token_env(token)
+    #    Kaggle mounts dataset_sources under two possible paths depending on
+    #    the runtime version — check both so old and new kernels both work.
+    for token_file in (
+        Path("/kaggle/input/datasets/hlexnc/chexvision-secrets/hf_token.txt"),
+        Path("/kaggle/input/chexvision-secrets/hf_token.txt"),
+    ):
+        if token_file.exists():
+            token = token_file.read_text(encoding="utf-8").strip()
+            if token:
+                print(f"[hub] Loaded HF_TOKEN from Kaggle dataset source: {token_file}")
+                return _set_hf_token_env(token)
 
     # 3. Kaggle UserSecretsClient — interactive sessions only (fallback).
     try:
