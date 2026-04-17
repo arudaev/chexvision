@@ -2,178 +2,229 @@
 
 ## Project Overview
 
-CheXVision is a deep learning project for chest X-ray pathology detection using the NIH Chest X-ray14 dataset (112,120 images, 14 disease labels). We implement two models (custom CNN from scratch + DenseNet-121 transfer learning) on two tasks (multi-label classification + binary classification).
+CheXVision is a university deep-learning project for chest X-ray pathology detection using the NIH Chest X-ray14 dataset (112,120 images, 14 disease labels). We implement two PyTorch models (custom CNN from scratch + DenseNet-121 transfer learning) on two tasks (14-class multi-label classification + binary normal/abnormal). Deadline: **June 23, 2026**. Course: Deep Learning & Big Data, AIN program, "BIG D(ATA)" team.
+
+---
+
+## Repository Layout
+
+```
+src/
+├── data/
+│   ├── dataset.py            # ChestXrayDataset, PATHOLOGY_LABELS, NUM_CLASSES
+│   ├── transforms.py         # get_train_transforms() / get_eval_transforms()
+│   └── download.py           # download_dataset() — snapshot_download wrapper
+├── models/
+│   ├── scratch_cnn.py        # CheXVisionScratch — residual CNN, dual heads
+│   └── densenet_transfer.py  # CheXVisionDenseNet — DenseNet-121 fine-tuning
+├── training/
+│   ├── trainer.py            # train() — main entry point, config merging, history
+│   ├── metrics.py            # compute_multilabel_metrics(), compute_binary_metrics()
+│   └── evaluate.py           # post-training evaluation, model comparison
+└── utils/
+    ├── hub.py                # load_hf_token(), configure_hf_runtime(),
+    │                         # upload_model_artifacts(), render_model_card()
+    └── visualization.py      # Grad-CAM, ROC curves, training history plots
+
+scripts/
+├── eda.py                    # EDA — streams metadata from HF, saves plots
+├── dispatch.py               # Kaggle kernel dispatch (build bundle, push, status)
+└── push_models.py            # Manual HF Hub upload (recovery path)
+
+kaggle/
+├── train_scratch/
+│   ├── kernel-metadata.json  # id, enable_gpu, enable_internet, dataset_sources
+│   └── script.py             # Self-contained training script (template with placeholder)
+└── train_transfer/
+    ├── kernel-metadata.json
+    └── script.py
+
+configs/
+├── default.yaml              # Base config — all kernels start from this
+├── scratch.yaml              # Overrides: model.type=scratch, input_channels=3
+└── transfer.yaml             # Overrides: model.type=densenet, freeze_epochs
+
+app/
+└── app.py                    # Streamlit demo — hf_hub_download for checkpoints
+
+tests/                        # pytest unit tests (~34 tests, 6 modules)
+├── test_dataset.py
+├── test_metrics.py
+├── test_transforms.py
+├── test_hub.py
+├── test_download.py
+└── test_dispatch.py
+```
+
+---
 
 ## Tech Stack
 
 - **Language**: Python 3.10+
-- **Framework**: PyTorch (+ torchvision)
-- **Data**: HuggingFace `datasets` library, PIL/Pillow
-- **Training**: PyTorch training loop (no high-level wrappers like Lightning — we want full control for the report)
-- **Visualization**: matplotlib, seaborn, Grad-CAM
+- **ML Framework**: PyTorch + torchvision (raw training loops — no Lightning)
+- **Data**: HuggingFace `datasets` + `huggingface_hub`, PIL/Pillow
 - **Demo**: Streamlit
-- **CI**: GitHub Actions (ruff linting, pytest)
-- **Hosting**: HuggingFace Hub (datasets, models, Spaces)
+- **CI**: GitHub Actions — ruff lint, pytest, mypy (on every push/PR)
+- **Hosting**: HuggingFace Hub (dataset, models, Spaces)
+- **Training compute**: Kaggle GPU kernels (free T4, dispatched via `scripts/dispatch.py`)
 
-## Directory Structure
-
-```
-src/                          # Core library
-├── data/
-│   ├── dataset.py            # ChestXrayDataset (PyTorch Dataset class)
-│   ├── transforms.py         # Data augmentation pipelines
-│   └── download.py           # Download from HuggingFace Hub
-├── models/
-│   ├── scratch_cnn.py        # Model 1: Custom ResNet-style CNN
-│   └── densenet_transfer.py  # Model 2: DenseNet-121 fine-tuning
-├── training/
-│   ├── trainer.py            # Training loop (cloud-only guard enforced)
-│   ├── metrics.py            # AUC-ROC, F1, confusion matrix
-│   └── evaluate.py           # Model evaluation and comparison
-└── utils/
-    └── visualization.py      # Grad-CAM, ROC curves, training plots
-
-scripts/                      # CLI tools (run locally)
-├── eda.py                    # EDA — streams from HF, generates plots
-├── dispatch.py               # Dispatch training to Kaggle GPU
-└── push_models.py            # Upload checkpoints to HF Hub
-
-kaggle/                       # Kaggle kernel configs (run on cloud GPU)
-├── train_scratch/            # Custom CNN training kernel
-└── train_transfer/           # DenseNet-121 training kernel
-```
+---
 
 ## Coding Conventions
 
-- Use **type hints** throughout
-- Follow **PEP 8** — enforced by `ruff`
-- Use **pathlib.Path** for all file paths
-- Config via **YAML files** in `configs/` — no hardcoded hyperparameters in source
-- All training runs must be **reproducible** — seed everything (torch, numpy, random, CUDA)
-- Use `torch.no_grad()` contexts for evaluation
-- Docstrings on public classes/functions only (Google style)
+- **Type hints** throughout; mypy runs in CI (`--ignore-missing-imports --no-strict-optional`)
+- **PEP 8** enforced by ruff (`E`, `F`, `I`, `N`, `W`, `UP` rules, line length 120)
+- **pathlib.Path** for all file operations — never raw string paths
+- **YAML configs** for all hyperparameters — nothing hardcoded in source
+- **Reproducibility**: seed `torch`, `numpy`, `random`, and CUDA in every training run
+- **Docstrings**: Google style on public classes/functions only
+- **No notebooks** — all logic lives in `src/` or `scripts/`
+
+---
 
 ## Key Design Decisions
 
-- **No PyTorch Lightning**: We use raw PyTorch training loops so every design decision is explicit and can be justified in the report
-- **Dual heads**: Both models share a backbone but branch into two classification heads (multi-label 14-class sigmoid + binary sigmoid)
-- **Weighted BCE loss**: Handles severe class imbalance in chest X-ray labels
-- **Grad-CAM**: Used for model interpretability — shows which regions the model focuses on
-- **HuggingFace Hub integration**: Dataset and models are pushed to HF for reproducibility and demo access
+- **Raw PyTorch loops**: every design choice is explicit and defensible in the course report
+- **Dual heads on a shared backbone**: one forward pass produces both a 14-class multilabel output and a binary output; trained with combined BCE loss
+- **Weighted BCE**: class-level `pos_weight` tensors handle the severe label imbalance in this dataset
+- **YAML config inheritance**: configs declare `_defaults_: default.yaml`; `_load_config()` deep-merges before training
+- **History JSON**: trainer saves per-epoch metrics to `{model}_history.json` alongside checkpoints for report figures
+- **`src.utils.hub`**: centralises all HF token resolution, upload logic, and model card rendering — Kaggle scripts import from here
 
-## Running the Project
+---
+
+## Running Locally
 
 ```bash
-# Install (local)
+# Install (editable, with dev extras)
 pip install -e ".[dev]"
 
-# EDA — runs locally, streams metadata from HF (lightweight)
-python scripts/eda.py --num-samples 5000 --output-dir results/eda
+# Lint
+ruff check src/ tests/ scripts/ app/
 
-# Lint & test — runs locally
-ruff check src/ tests/ scripts/
+# Tests — CHEXVISION_ALLOW_LOCAL=1 bypasses the cloud-only guard
 CHEXVISION_ALLOW_LOCAL=1 pytest tests/ -v
 
-# Dispatch training to Kaggle GPU (requires `pip install kaggle` + API key)
-python scripts/dispatch.py kaggle push scratch
-python scripts/dispatch.py kaggle push transfer
-python scripts/dispatch.py kaggle status scratch
+# Type check
+mypy src/ --ignore-missing-imports
 
-# Upload trained models to HF Hub
-python scripts/push_models.py --checkpoint checkpoints/CheXVision-ResNet_best.pth
+# EDA (lightweight — streams metadata only, no full download)
+python scripts/eda.py --num-samples 5000 --output-dir results/eda
 
-# Demo — runs locally or on HF Space
+# Streamlit demo (loads models from HF Hub)
 streamlit run app/app.py
 ```
 
-**Never run `src.training.trainer` directly on a local machine.** The cloud guard will block it.
+**Never run `src.training.trainer` directly on a local machine** — the cloud guard will raise unless `CHEXVISION_ALLOW_LOCAL=1` is set.
 
-## Configuration
+---
 
-All hyperparameters live in `configs/*.yaml`. Key parameters:
+## Kaggle Training Dispatch
 
-- `model.type`: "scratch" or "densenet"
-- `training.epochs`, `training.batch_size`, `training.lr`
-- `training.optimizer`: AdamW config
-- `training.scheduler`: Cosine annealing config
-- `data.image_size`: 224 (standard for both models)
-- `data.augmentation`: RandomHorizontalFlip, RandomRotation, ColorJitter
+### How it works
+
+`scripts/dispatch.py` bundles `src/` and `configs/` into a base64 zip payload, injects it into the kernel script template (replacing the `__CHEXVISION_PROJECT_BUNDLE_B64__` sentinel), writes a `kernel-metadata.json` that forces `enable_gpu=true` and `enable_internet=true`, and calls `kaggle kernels push`.
+
+On Kaggle, the script unpacks the bundle, downloads the dataset via `src.data.download`, trains, and uploads artifacts to HF Hub using `src.utils.hub.upload_model_artifacts`.
+
+### Credentials
+
+`KAGGLE_API_TOKEN` in `.env` must be a `KGAT_...` token (Kaggle CLI >= 1.8.0 / kaggle 2.x format). The `dispatch.py` CLI reads `.env` via `python-dotenv`.
+
+HF token injection into the Kaggle runtime:
+
+1. **Preferred (automated)**: private dataset `hlexnc/chexvision-secrets` containing `hf_token.txt`. Both `kernel-metadata.json` files declare `"dataset_sources": ["hlexnc/chexvision-secrets"]`; the token file is mounted at `/kaggle/input/chexvision-secrets/hf_token.txt` in every API-pushed kernel. `load_hf_token()` checks this path automatically.
+2. **Fallback**: `UserSecretsClient().get_secret("HF_TOKEN")` — works only in interactive Kaggle sessions; not reliable for automated pushes.
+
+### Commands
+
+```bash
+python scripts/dispatch.py kaggle push scratch    # build bundle, push, trigger run
+python scripts/dispatch.py kaggle push transfer
+
+python scripts/dispatch.py kaggle status scratch  # check run status
+python scripts/dispatch.py kaggle output scratch  # download output files
+```
+
+---
 
 ## HuggingFace Resources
 
-- Dataset: `HlexNC/chest-xray-14` (preprocessed 224x224 parquet shards)
-- Model (scratch): `HlexNC/chexvision-scratch`
-- Model (transfer): `HlexNC/chexvision-densenet`
-- Demo Space: `HlexNC/chexvision-demo`
-- Data Pipeline Space: `HlexNC/chexvision-data-pipeline` (one-time repackaging job)
+| Resource | ID |
+|----------|----|
+| Dataset | `HlexNC/chest-xray-14` |
+| Model — scratch CNN | `HlexNC/chexvision-scratch` |
+| Model — DenseNet | `HlexNC/chexvision-densenet` |
+| Demo Space (Streamlit) | `HlexNC/chexvision-demo` |
+| Data pipeline Space (one-time) | `HlexNC/chexvision-data-pipeline` |
+
+The dataset is pinned to a specific commit hash stored in `src/utils/hub.py` (`HF_DATASET_REVISION`). Update this constant when a new dataset version is intentionally published.
+
+---
 
 ## API Access
 
-Tokens are stored in `.env` at the project root. Load them with:
+Tokens live in `.env` at the project root (gitignored). Load in Python with:
 
 ```python
 from dotenv import load_dotenv; load_dotenv()
 ```
 
-Or read them directly from `.env` for shell/curl usage.
+| Token | Env var | Scope |
+|-------|---------|-------|
+| HuggingFace | `HF_TOKEN` | Read + write to HlexNC repos |
+| Kaggle | `KAGGLE_API_TOKEN` | Push kernels, read status/output |
+| GitHub | `GITHUB_TOKEN` | CI status, workflow triggers, secrets management |
 
-### GitHub API
+GitHub repo: `arudaev/chexvision`
+HF owner: `HlexNC`
 
-- **Token env var**: `GITHUB_TOKEN`
-- **Repo**: `arudaev/chexvision`
-- Use for: creating issues, managing PRs, triggering workflows, setting secrets, reading CI status, managing releases
-- Example: `curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/arudaev/chexvision/actions/runs`
-
-### HuggingFace API
-
-- **Token env var**: `HF_TOKEN`
-- **Owner**: `HlexNC`
-- Use for: uploading datasets, pushing models, managing the Space, creating/managing repos, querying dataset/model info
-- Repos:
-  - Dataset: `HlexNC/chest-xray-14`
-  - Model (scratch): `HlexNC/chexvision-scratch`
-  - Model (transfer): `HlexNC/chexvision-densenet`
-  - Space (Streamlit demo): `HlexNC/chexvision-demo`
-- Example: `curl -H "Authorization: Bearer $HF_TOKEN" https://huggingface.co/api/models/HlexNC/chexvision-scratch`
-
-You have full read/write access to both platforms. Use the APIs freely for any automation — CI/CD, dataset uploads, model pushes, repo management, etc.
+---
 
 ## Cloud-Only Compute Policy
 
-**All heavy compute (training, dataset processing, large-scale evaluation) MUST run in the cloud. Never on local dev machines.**
+| Task | Where | How |
+|------|-------|-----|
+| Model training | Kaggle GPU kernels | `dispatch.py kaggle push` |
+| Large-scale evaluation | Kaggle GPU | Same or separate kernel |
+| Streamlit demo | HF Space `chexvision-demo` | Auto-deployed by GitHub Actions on push to `main` |
+| Linting / unit tests | GitHub Actions CI | Every push / PR |
+| EDA | Local (lightweight) | `scripts/eda.py` — metadata only |
+| Code editing, small tests | Local | `CHEXVISION_ALLOW_LOCAL=1 pytest` |
 
-| Task | Where to Run | How |
-|------|-------------|-----|
-| Dataset repackaging | HF Space (`chexvision-data-pipeline`) | One-time Gradio job on HF CPU |
-| Training | Kaggle GPU kernels | `python scripts/dispatch.py kaggle push scratch` |
-| Large-scale evaluation | Kaggle GPU | Same kernel, or separate eval kernel |
-| Streamlit demo | HF Space (`chexvision-demo`) | Auto-deployed via GitHub Actions |
-| Linting, unit tests | GitHub Actions CI | Automated on every push/PR |
-| EDA | Local (lightweight) | `python scripts/eda.py` — streams metadata only |
-| Local dev | Code editing, small tests only | `CHEXVISION_ALLOW_LOCAL=1 pytest tests/ -v` |
+No notebooks. No local GPU training. No Colab.
 
-The training script (`src/training/trainer.py`) enforces this: it will **exit with an error** if run on a local CPU machine without GPU. Override with `CHEXVISION_ALLOW_LOCAL=1` for unit tests only.
+---
 
-### Training on Kaggle
+## CI/CD
 
-Kernel configs live in `kaggle/`. Each has a `kernel-metadata.json` (GPU enabled, internet enabled) and a `script.py`. The script clones the repo, downloads data, trains, and uploads the checkpoint to HF Hub.
+- **`ci.yml`**: runs on every push/PR to `main` — three parallel jobs: Lint (ruff), Test (pytest), Type Check (mypy)
+- **`deploy-space.yml`**: runs on push to `main` — pushes the full repo to `HlexNC/chexvision-demo` HF Space
 
-```bash
-pip install kaggle  # one-time
-# Set up ~/.kaggle/kaggle.json with your API key
+The HF Space uses `requirements.txt` (not the Dockerfile) on Streamlit Community Cloud. The Dockerfile is kept for completeness and potential future Docker-based HF Spaces deployment.
 
-python scripts/dispatch.py kaggle push scratch    # dispatches to Kaggle GPU
-python scripts/dispatch.py kaggle status scratch   # check progress
-python scripts/dispatch.py kaggle output scratch   # download output
-```
+---
 
-### Deploying to HF Space
+## Configuration Reference
 
-Push to `main` and the GitHub Action (`.github/workflows/deploy-space.yml`) auto-deploys to the HF Space.
+All hyperparameters are in `configs/*.yaml`. The `_defaults_` key triggers deep merge with the base config.
+
+Key fields:
+- `model.type`: `"scratch"` or `"densenet"`
+- `model.input_channels`: `3` (RGB — both models)
+- `training.epochs`, `training.batch_size`, `training.lr`
+- `training.optimizer`: AdamW settings
+- `training.scheduler`: cosine annealing settings
+- `training.freeze_epochs`: (DenseNet only) epochs to train with frozen backbone
+- `data.image_size`: `224`
+- `data.augmentation`: RandomHorizontalFlip, RandomRotation, ColorJitter
+- `logging.checkpoint_dir`: where to save `.pth` files
+
+---
 
 ## Important Notes
 
-- The NIH Chest X-ray14 dataset is ~45GB raw. Our HF dataset repo stores preprocessed 224x224 parquet shards (~5GB).
-- The data pipeline Space (`chexvision-data-pipeline`) handles repackaging — run it once, then the dataset is ready.
-- Always set random seeds for reproducibility.
-- The report must justify every architectural decision — keep code comments explaining "why" not "what".
+- The raw NIH dataset is ~45 GB. `HlexNC/chest-xray-14` stores pre-resized 224×224 parquet shards (~4.7 GB, 36 shards).
+- Always pin `HF_DATASET_REVISION` to a specific commit hash for reproducible training runs.
+- The report must justify every architectural decision — keep code comments explaining *why*, not *what*.
+- Grad-CAM and ROC curve figures for the report are generated by `src/utils/visualization.py`.
