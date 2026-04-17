@@ -21,11 +21,14 @@ ENV/
 *.swo
 *~
 
+# Local Codex scratch space
+.codex_tmp/
+
 # Jupyter
 .ipynb_checkpoints/
 
 # Data (large files — use HuggingFace Hub)
-data/
+/data/
 *.h5
 *.hdf5
 *.tar.gz

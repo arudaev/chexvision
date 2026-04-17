@@ -13,6 +13,7 @@ Requires the Kaggle CLI: pip install kaggle
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -30,6 +31,43 @@ KERNEL_SLUGS = {
 }
 
 
+def _load_env() -> None:
+    """Load environment variables from the project .env when available."""
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except ImportError:
+        return
+
+
+def _ensure_kaggle_auth(model: str) -> None:
+    """Map repo-local Kaggle credentials into the variables the CLI expects."""
+    _load_env()
+
+    if os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY"):
+        return
+
+    api_token = os.environ.get("KAGGLE_API_TOKEN", "").strip()
+    if not api_token:
+        print(
+            "ERROR: Kaggle credentials not found. Set KAGGLE_USERNAME/KAGGLE_KEY "
+            "or provide KAGGLE_API_TOKEN in .env.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if ":" in api_token:
+        username, key = api_token.split(":", 1)
+        os.environ.setdefault("KAGGLE_USERNAME", username)
+        os.environ.setdefault("KAGGLE_KEY", key)
+        return
+
+    owner = KERNEL_SLUGS[model].split("/", 1)[0]
+    os.environ.setdefault("KAGGLE_USERNAME", owner)
+    os.environ.setdefault("KAGGLE_KEY", api_token)
+
+
 def _run(cmd: list[str]) -> None:
     """Run a subprocess and stream its output."""
     print(f"$ {' '.join(cmd)}")
@@ -41,6 +79,7 @@ def _run(cmd: list[str]) -> None:
 
 def cmd_push(model: str) -> None:
     """Push a kernel folder to Kaggle (triggers a new run)."""
+    _ensure_kaggle_auth(model)
     kernel_dir = KERNEL_DIRS[model]
     if not kernel_dir.exists():
         print(f"ERROR: Kernel directory not found: {kernel_dir}", file=sys.stderr)
@@ -50,12 +89,14 @@ def cmd_push(model: str) -> None:
 
 def cmd_status(model: str) -> None:
     """Check the current status of a Kaggle kernel."""
+    _ensure_kaggle_auth(model)
     slug = KERNEL_SLUGS[model]
     _run(["kaggle", "kernels", "status", slug])
 
 
 def cmd_output(model: str) -> None:
     """Download the output files of a completed Kaggle kernel."""
+    _ensure_kaggle_auth(model)
     slug = KERNEL_SLUGS[model]
     out_dir = Path(f"kaggle_output/{model}")
     out_dir.mkdir(parents=True, exist_ok=True)

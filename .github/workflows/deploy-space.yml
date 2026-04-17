@@ -6,6 +6,7 @@ on:
     paths:
       - "app/**"
       - "src/**"
+      - "README.md"
       - "Dockerfile"
       - "requirements.txt"
       - ".dockerignore"
