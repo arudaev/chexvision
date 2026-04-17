@@ -6,6 +6,7 @@ Upload a chest X-ray and get pathology predictions from both models.
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -14,10 +15,16 @@ import torch
 from huggingface_hub import hf_hub_download
 from PIL import Image
 
-from src.data.dataset import PATHOLOGY_LABELS
-from src.data.transforms import get_eval_transforms
-from src.models.densenet_transfer import CheXVisionDenseNet
-from src.models.scratch_cnn import CheXVisionScratch
+# Hugging Face Streamlit Spaces launch `app/app.py` directly, which puts the
+# `app/` directory on sys.path instead of the repository root.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from src.data.dataset import PATHOLOGY_LABELS  # noqa: E402
+from src.data.transforms import get_eval_transforms  # noqa: E402
+from src.models.densenet_transfer import CheXVisionDenseNet  # noqa: E402
+from src.models.scratch_cnn import CheXVisionScratch  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
