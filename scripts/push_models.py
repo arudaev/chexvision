@@ -16,7 +16,6 @@ from pathlib import Path
 import torch
 from huggingface_hub import HfApi
 
-
 # Default repo IDs keyed by the model type stored in the checkpoint config.
 DEFAULT_REPOS = {
     "scratch": "HlexNC/chexvision-scratch",

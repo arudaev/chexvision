@@ -114,6 +114,18 @@ if hf_token:
             token=hf_token,
         )
         print(f"Uploaded {best_ckpt.name} to HlexNC/chexvision-scratch")
+
+        # Also upload training history
+        history_file = ckpt_dir / "CheXVision-ResNet_history.json"
+        if history_file.exists():
+            api.upload_file(
+                path_or_fileobj=str(history_file),
+                path_in_repo=history_file.name,
+                repo_id="HlexNC/chexvision-scratch",
+                repo_type="model",
+                token=hf_token,
+            )
+            print(f"Uploaded {history_file.name} to HlexNC/chexvision-scratch")
     else:
         print(f"WARNING: Best checkpoint not found at {best_ckpt}")
 else:

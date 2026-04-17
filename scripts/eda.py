@@ -75,7 +75,7 @@ def plot_label_distribution(df: pd.DataFrame, output_dir: Path) -> None:
     plt.tight_layout()
     fig.savefig(output_dir / "label_distribution.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved label_distribution.png")
+    print("  Saved label_distribution.png")
 
 
 def plot_binary_distribution(df: pd.DataFrame, output_dir: Path) -> None:
@@ -98,7 +98,7 @@ def plot_binary_distribution(df: pd.DataFrame, output_dir: Path) -> None:
     plt.tight_layout()
     fig.savefig(output_dir / "binary_distribution.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved binary_distribution.png")
+    print("  Saved binary_distribution.png")
 
 
 def plot_cooccurrence_matrix(df: pd.DataFrame, output_dir: Path) -> None:
@@ -110,9 +110,9 @@ def plot_cooccurrence_matrix(df: pd.DataFrame, output_dir: Path) -> None:
         if pd.isna(labels_str) or labels_str == "No Finding":
             continue
         present = [
-            PATHOLOGY_LABELS.index(l.strip())
-            for l in str(labels_str).split("|")
-            if l.strip() in PATHOLOGY_LABELS
+            PATHOLOGY_LABELS.index(lbl.strip())
+            for lbl in str(labels_str).split("|")
+            if lbl.strip() in PATHOLOGY_LABELS
         ]
         for i in present:
             for j in present:
@@ -132,7 +132,7 @@ def plot_cooccurrence_matrix(df: pd.DataFrame, output_dir: Path) -> None:
     plt.tight_layout()
     fig.savefig(output_dir / "cooccurrence_matrix.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved cooccurrence_matrix.png")
+    print("  Saved cooccurrence_matrix.png")
 
 
 def plot_sample_images(samples: list[dict], output_dir: Path) -> None:
@@ -149,7 +149,7 @@ def plot_sample_images(samples: list[dict], output_dir: Path) -> None:
     plt.tight_layout()
     fig.savefig(output_dir / "sample_images.png", dpi=150)
     plt.close(fig)
-    print(f"  Saved sample_images.png")
+    print("  Saved sample_images.png")
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ def print_summary(df: pd.DataFrame) -> None:
     for labels_str in df["labels"]:
         if pd.isna(labels_str) or labels_str == "No Finding":
             continue
-        individual = [l.strip() for l in str(labels_str).split("|")]
+        individual = [lbl.strip() for lbl in str(labels_str).split("|")]
         if len(individual) > 1:
             multi_label_count += 1
         for label in individual:

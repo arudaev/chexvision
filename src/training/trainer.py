@@ -9,6 +9,7 @@ university cluster). Do NOT run training on local machines — use notebooks in 
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import random
@@ -257,6 +258,16 @@ def train(config: dict) -> None:
     checkpoint_dir = Path(config.get("logging", {}).get("checkpoint_dir", "checkpoints"))
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
+    # History tracking for report figures
+    history: dict[str, list[float]] = {
+        "train_combined_loss": [],
+        "val_multilabel_loss": [],
+        "auc_roc_macro": [],
+        "binary_auc_roc": [],
+        "binary_f1": [],
+        "learning_rate": [],
+    }
+
     for epoch in range(1, train_cfg["epochs"] + 1):
         logger.info("Epoch %d/%d", epoch, train_cfg["epochs"])
 
@@ -288,6 +299,14 @@ def train(config: dict) -> None:
             val_metrics.get("binary_auc_roc", 0),
         )
 
+        # Record history
+        history["train_combined_loss"].append(train_metrics["train_combined_loss"])
+        history["val_multilabel_loss"].append(val_metrics.get("val_multilabel_loss", 0))
+        history["auc_roc_macro"].append(val_metrics.get("auc_roc_macro", 0))
+        history["binary_auc_roc"].append(val_metrics.get("binary_auc_roc", 0))
+        history["binary_f1"].append(val_metrics.get("binary_f1", 0))
+        history["learning_rate"].append(optimizer.param_groups[0]["lr"])
+
         # Save best model
         current_auc = val_metrics.get("auc_roc_macro", 0)
         if current_auc > best_auc:
@@ -308,7 +327,41 @@ def train(config: dict) -> None:
                 logger.info("Early stopping at epoch %d", epoch)
                 break
 
+    # Save training history for report figures
+    model_name = config["model"].get("name", "model")
+    history_path = checkpoint_dir / f"{model_name}_history.json"
+    with open(history_path, "w") as f:
+        json.dump(history, f, indent=2)
+    logger.info("Training history saved to %s", history_path)
+
     logger.info("Training complete. Best AUC-ROC: %.4f", best_auc)
+
+
+def _deep_merge(base: dict, overrides: dict) -> dict:
+    """Recursively merge *overrides* into a copy of *base*."""
+    merged = base.copy()
+    for key, value in overrides.items():
+        if key == "_defaults_":
+            continue
+        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def _load_config(config_path: Path) -> dict:
+    """Load a YAML config, resolving ``_defaults_`` inheritance."""
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    if "_defaults_" in config:
+        defaults_path = config_path.parent / config.pop("_defaults_")
+        with open(defaults_path) as f:
+            defaults = yaml.safe_load(f)
+        config = _deep_merge(defaults, config)
+
+    return config
 
 
 def main() -> None:
@@ -318,9 +371,7 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-    with open(args.config) as f:
-        config = yaml.safe_load(f)
-
+    config = _load_config(args.config)
     train(config)
 
 

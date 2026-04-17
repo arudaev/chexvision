@@ -1,10 +1,10 @@
 """Unit tests for CheXVision model architectures."""
 
-import torch
 import pytest
+import torch
 
-from src.models.scratch_cnn import CheXVisionScratch
 from src.models.densenet_transfer import CheXVisionDenseNet
+from src.models.scratch_cnn import CheXVisionScratch
 
 
 @pytest.fixture

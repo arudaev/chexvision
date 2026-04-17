@@ -25,8 +25,8 @@ KERNEL_DIRS = {
 
 # Kaggle kernel slugs (must match the "id" in kernel-metadata.json).
 KERNEL_SLUGS = {
-    "scratch": "INSERT_KAGGLE_USERNAME/chexvision-train-scratch",
-    "transfer": "INSERT_KAGGLE_USERNAME/chexvision-train-transfer",
+    "scratch": "HlexNC/chexvision-train-scratch",
+    "transfer": "HlexNC/chexvision-train-transfer",
 }
 
 

@@ -5,36 +5,75 @@ Upload a chest X-ray and get pathology predictions from both models.
 
 from __future__ import annotations
 
-import streamlit as st
-import torch
-import numpy as np
-from PIL import Image
+import logging
 from pathlib import Path
 
-from src.data.transforms import get_eval_transforms
+import numpy as np
+import streamlit as st
+import torch
+from huggingface_hub import hf_hub_download
+from PIL import Image
+
 from src.data.dataset import PATHOLOGY_LABELS
-from src.models.scratch_cnn import CheXVisionScratch
+from src.data.transforms import get_eval_transforms
 from src.models.densenet_transfer import CheXVisionDenseNet
+from src.models.scratch_cnn import CheXVisionScratch
+
+logger = logging.getLogger(__name__)
+
+# HF Hub model repos
+HF_SCRATCH_REPO = "HlexNC/chexvision-scratch"
+HF_DENSENET_REPO = "HlexNC/chexvision-densenet"
+
+
+def _try_load_checkpoint(
+    repo_id: str,
+    filename: str,
+    local_path: Path,
+    device: torch.device,
+) -> dict | None:
+    """Try loading a checkpoint from HF Hub first, then local path."""
+    # Try HF Hub
+    try:
+        path = hf_hub_download(repo_id=repo_id, filename=filename)
+        return torch.load(path, map_location=device, weights_only=False)
+    except Exception:
+        logger.debug("Could not download %s from %s", filename, repo_id)
+
+    # Fall back to local
+    if local_path.exists():
+        return torch.load(local_path, map_location=device, weights_only=False)
+
+    return None
 
 
 @st.cache_resource
 def load_models() -> dict[str, torch.nn.Module]:
-    """Load trained models (cached across reruns)."""
+    """Load trained models from HF Hub or local checkpoints (cached)."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = {}
 
-    scratch_path = Path("checkpoints/CheXVision-ResNet_best.pth")
-    densenet_path = Path("checkpoints/CheXVision-DenseNet_best.pth")
-
-    if scratch_path.exists():
-        ckpt = torch.load(scratch_path, map_location=device, weights_only=False)
+    # Scratch CNN
+    ckpt = _try_load_checkpoint(
+        HF_SCRATCH_REPO,
+        "CheXVision-ResNet_best.pth",
+        Path("checkpoints/CheXVision-ResNet_best.pth"),
+        device,
+    )
+    if ckpt:
         model = CheXVisionScratch()
         model.load_state_dict(ckpt["model_state_dict"])
         model.to(device).eval()
         models["Custom CNN (From Scratch)"] = model
 
-    if densenet_path.exists():
-        ckpt = torch.load(densenet_path, map_location=device, weights_only=False)
+    # DenseNet-121
+    ckpt = _try_load_checkpoint(
+        HF_DENSENET_REPO,
+        "CheXVision-DenseNet_best.pth",
+        Path("checkpoints/CheXVision-DenseNet_best.pth"),
+        device,
+    )
+    if ckpt:
         model = CheXVisionDenseNet(pretrained=False)
         model.load_state_dict(ckpt["model_state_dict"])
         model.to(device).eval()
@@ -59,7 +98,7 @@ def predict(model: torch.nn.Module, image: Image.Image) -> dict[str, np.ndarray]
 
 
 def main() -> None:
-    st.set_page_config(page_title="CheXVision", page_icon="🫁", layout="wide")
+    st.set_page_config(page_title="CheXVision", page_icon="\U0001fac1", layout="wide")
 
     st.title("CheXVision")
     st.markdown("**Large-Scale Chest X-Ray Pathology Detection** — Upload a chest X-ray for AI-powered analysis.")
@@ -83,11 +122,18 @@ def main() -> None:
     models = load_models()
 
     if not models:
-        st.warning("No trained model checkpoints found in `checkpoints/`. Train models first.")
-        st.code("python -m src.training.trainer --config configs/scratch.yaml", language="bash")
+        st.warning(
+            "No trained models available yet. Models will appear here once training "
+            "is complete and checkpoints are uploaded to HuggingFace Hub."
+        )
+        st.info(
+            "**Training status**: Check model repos at "
+            "[chexvision-scratch](https://huggingface.co/HlexNC/chexvision-scratch) and "
+            "[chexvision-densenet](https://huggingface.co/HlexNC/chexvision-densenet)"
+        )
         return
 
-    uploaded_file = st.file_uploader("Upload a chest X-ray image", type=["png", "jpg", "jpeg", "dcm"])
+    uploaded_file = st.file_uploader("Upload a chest X-ray image", type=["png", "jpg", "jpeg"])
 
     if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
