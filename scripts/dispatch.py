@@ -17,6 +17,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from shutil import which
 
 # Map short model names to kernel directory paths (relative to repo root).
 KERNEL_DIRS = {
@@ -29,6 +30,31 @@ KERNEL_SLUGS = {
     "scratch": "HlexNC/chexvision-train-scratch",
     "transfer": "HlexNC/chexvision-train-transfer",
 }
+
+
+def _get_kaggle_version() -> tuple[int, ...] | None:
+    """Return the installed Kaggle CLI version as a tuple when available."""
+    if which("kaggle") is None:
+        return None
+
+    result = subprocess.run(
+        ["kaggle", "--version"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+
+    output = (result.stdout or result.stderr).strip()
+    prefix = "Kaggle API "
+    if output.startswith(prefix):
+        output = output[len(prefix):]
+
+    try:
+        return tuple(int(part) for part in output.split("."))
+    except ValueError:
+        return None
 
 
 def _load_env() -> None:
@@ -56,6 +82,20 @@ def _ensure_kaggle_auth(model: str) -> None:
             file=sys.stderr,
         )
         sys.exit(1)
+
+    # Newer Kaggle personal access tokens look like KGAT_... and are handled
+    # directly by newer Kaggle CLI releases without a username split.
+    if api_token.startswith("KGAT_"):
+        version = _get_kaggle_version()
+        if version is not None and version < (1, 8, 0):
+            print(
+                "ERROR: Detected a newer Kaggle API token (KGAT_...), but the "
+                f"installed Kaggle CLI is {'.'.join(map(str, version))}. "
+                "Upgrade Kaggle CLI to >= 1.8.0 or use kagglehub >= 0.4.1.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        return
 
     if ":" in api_token:
         username, key = api_token.split(":", 1)
