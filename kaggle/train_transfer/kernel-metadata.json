@@ -1,5 +1,5 @@
 {
-  "id": "INSERT_KAGGLE_USERNAME/chexvision-train-transfer",
+  "id": "HlexNC/chexvision-train-transfer",
   "title": "CheXVision Train DenseNet Transfer",
   "code_file": "script.py",
   "language": "python",

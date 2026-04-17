@@ -8,7 +8,7 @@ model:
 
   # Custom ResNet-style architecture
   architecture:
-    input_channels: 1  # Grayscale X-rays
+    input_channels: 3  # RGB (ImageNet-normalized)
     initial_filters: 64
     block_config: [2, 2, 2, 2]  # Number of residual blocks per stage
     filter_sizes: [64, 128, 256, 512]

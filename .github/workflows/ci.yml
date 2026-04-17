@@ -18,7 +18,7 @@ jobs:
       - name: Install ruff
         run: pip install ruff
       - name: Run ruff
-        run: ruff check src/ tests/
+        run: ruff check src/ tests/ scripts/
 
   test:
     name: Test

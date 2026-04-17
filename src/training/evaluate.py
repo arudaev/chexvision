@@ -9,9 +9,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import torch
-import yaml
 from torch.utils.data import DataLoader
 
 from src.data.dataset import PATHOLOGY_LABELS, ChestXrayDataset
