@@ -109,7 +109,10 @@ def configure_hf_runtime(
 
     hf_home = os.environ.get("HF_HOME", "").strip()
     if hf_home:
-        Path(hf_home).mkdir(parents=True, exist_ok=True)
+        try:
+            Path(hf_home).mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass  # Best-effort; the path may not be writable outside a real Kaggle kernel
 
     os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
     os.environ.setdefault("HF_HUB_ETAG_TIMEOUT", "30")
