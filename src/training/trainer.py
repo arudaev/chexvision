@@ -222,8 +222,12 @@ def train(config: dict) -> None:
 
     # Build datasets
     data_dir = Path(data_cfg.get("data_dir", "data"))
-    train_dataset = ChestXrayDataset(data_dir / "images", data_dir / "labels.csv", split="train", image_size=data_cfg["image_size"])
-    val_dataset = ChestXrayDataset(data_dir / "images", data_dir / "labels.csv", split="val", image_size=data_cfg["image_size"])
+    # download.py stores paths in labels.csv as "images/{filename}".
+    # ChestXrayDataset joins image_dir with each path, so pass data_dir directly —
+    # not data_dir/"images" — to avoid a doubled images/images/ prefix.
+    labels_csv = data_dir / "labels.csv"
+    train_dataset = ChestXrayDataset(data_dir, labels_csv, split="train", image_size=data_cfg["image_size"])
+    val_dataset = ChestXrayDataset(data_dir, labels_csv, split="val", image_size=data_cfg["image_size"])
 
     train_loader = DataLoader(
         train_dataset,
