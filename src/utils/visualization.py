@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import torch
-import torch.nn.functional as F
-from sklearn.metrics import roc_curve, auc
+import torch.nn.functional as functional
+from sklearn.metrics import auc, roc_curve
 
 from src.data.dataset import PATHOLOGY_LABELS
 
@@ -150,10 +150,10 @@ class GradCAM:
         # Global average pooling of gradients
         weights = self.gradients.mean(dim=[2, 3], keepdim=True)
         cam = (weights * self.activations).sum(dim=1, keepdim=True)
-        cam = F.relu(cam)
+        cam = functional.relu(cam)
 
         # Resize to input image dimensions
-        cam = F.interpolate(cam, size=image.shape[2:], mode="bilinear", align_corners=False)
+        cam = functional.interpolate(cam, size=image.shape[2:], mode="bilinear", align_corners=False)
         cam = cam.squeeze().cpu().numpy()
 
         # Normalize to [0, 1]

@@ -8,6 +8,8 @@ on:
       - "src/**"
       - "Dockerfile"
       - "requirements.txt"
+      - ".dockerignore"
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -15,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Push to HuggingFace Space
         env:
