@@ -38,8 +38,10 @@ subprocess.check_call(
         "pip",
         "install",
         "-q",
-        "torch",
-        "torchvision",
+        # torch and torchvision are pre-installed in the Kaggle GPU container
+        # and compiled specifically for the available GPU hardware.
+        # Reinstalling them via pip would upgrade to the latest PyTorch which
+        # dropped support for older GPU architectures (P100 / sm_60 / CUDA 6.0).
         "numpy",
         "pandas",
         "Pillow",
