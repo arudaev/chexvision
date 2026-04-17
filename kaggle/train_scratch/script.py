@@ -31,17 +31,20 @@ def configure_kaggle_hf_env() -> None:
 
 configure_kaggle_hf_env()
 
+# PyTorch 2.3.1 is the last release whose cu118 wheels include sm_60 binaries,
+# which is required for the P100 GPU (CUDA compute capability 6.0).
+# Newer PyTorch versions (including the one in Kaggle's Latest Container Image)
+# only ship sm_70+, so we pin explicitly rather than relying on the container.
 subprocess.check_call(
     [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-        "-q",
-        # torch and torchvision are pre-installed in the Kaggle GPU container
-        # and compiled specifically for the available GPU hardware.
-        # Reinstalling them via pip would upgrade to the latest PyTorch which
-        # dropped support for older GPU architectures (P100 / sm_60 / CUDA 6.0).
+        sys.executable, "-m", "pip", "install", "-q",
+        "torch==2.3.1", "torchvision==0.18.1",
+        "--index-url", "https://download.pytorch.org/whl/cu118",
+    ]
+)
+subprocess.check_call(
+    [
+        sys.executable, "-m", "pip", "install", "-q",
         "numpy",
         "pandas",
         "Pillow",
