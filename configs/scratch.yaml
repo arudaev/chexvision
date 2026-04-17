@@ -1,4 +1,10 @@
-# CheXVision — Model 1: Custom CNN From Scratch
+# CheXVision — Model 1: Custom CNN From Scratch (v2)
+#
+# v2 Upgrades:
+#   - ResNet-50 depth: [3,4,6,3] instead of [2,2,2,2] (+16M parameters, 4× more capacity)
+#   - SE attention: channel-wise recalibration for multi-label pathology discrimination
+#   - 100 epochs: use full Kaggle 9h GPU budget (AMP enables ~2× more epochs per hour)
+#   - AMP + grad_accum_steps=4: effective batch 128, stable convergence
 
 _defaults_: default.yaml
 
@@ -6,16 +12,17 @@ model:
   type: "scratch"
   name: "CheXVision-ResNet"
 
-  # Custom ResNet-style architecture
+  # Custom ResNet-50 equivalent architecture with SE attention
   architecture:
-    input_channels: 3  # RGB (ImageNet-normalized)
+    input_channels: 3          # RGB (ImageNet-normalized)
     initial_filters: 64
-    block_config: [2, 2, 2, 2]  # Number of residual blocks per stage
+    block_config: [3, 4, 6, 3] # ResNet-50 depth: 23M params vs 11M for [2,2,2,2]
     filter_sizes: [64, 128, 256, 512]
     dropout: 0.5
     activation: "relu"
     use_batch_norm: true
     global_avg_pool: true
+    use_se: true               # Squeeze-Excitation channel attention (Hu et al. 2018)
 
   # Dual classification heads
   heads:
@@ -27,10 +34,13 @@ model:
       activation: "sigmoid"
 
 training:
-  epochs: 50
+  epochs: 100                  # Full 9h Kaggle budget; early stopping will cut short if needed
   batch_size: 32
   learning_rate: 0.001
   weight_decay: 0.0001
   optimizer: "adamw"
   scheduler: "cosine"
   warmup_epochs: 5
+  early_stopping_patience: 15  # More patience for deeper model
+  use_amp: true
+  grad_accum_steps: 4          # Effective batch: 32 × 4 = 128
