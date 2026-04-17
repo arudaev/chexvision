@@ -119,6 +119,9 @@ python scripts/dispatch.py kaggle status scratch
 python scripts/dispatch.py kaggle output scratch
 ```
 
+Before dispatching a training kernel, add `HF_TOKEN` to your Kaggle Secrets.
+The pushed kernel explicitly enables GPU and internet, downloads the pinned public dataset snapshot from `HlexNC/chest-xray-14`, and uploads the trained checkpoint, history JSON, config, and `README.md` model card to the matching public HF model repo.
+
 Or trigger the data pipeline on HuggingFace:
 [Data Pipeline Space](https://huggingface.co/spaces/HlexNC/chexvision-data-pipeline)
 
@@ -128,6 +131,8 @@ Or trigger the data pipeline on HuggingFace:
 python scripts/push_models.py --checkpoint checkpoints/CheXVision-ResNet_best.pth
 python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.pth
 ```
+
+`scripts/push_models.py` is the manual recovery path if a Kaggle run finished training but the final upload step needs to be repeated. The intended production flow is Kaggle training followed by automatic HF model upload from the kernel itself.
 
 ### 5. Evaluate & Compare
 

@@ -13,11 +13,22 @@ Requires the Kaggle CLI: pip install kaggle
 from __future__ import annotations
 
 import argparse
+import base64
+import io
+import json
 import os
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
-from shutil import which
+from shutil import rmtree, which
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+BUNDLE_ROOT = PROJECT_ROOT / ".codex_tmp" / "kaggle"
+BUNDLE_PATHS = (Path("src"), Path("configs"))
+BUNDLE_SENTINEL = "__CHEXVISION_PROJECT_BUNDLE_B64__"
+EXCLUDED_BUNDLE_DIRS = {"__pycache__", ".pytest_cache"}
+EXCLUDED_BUNDLE_SUFFIXES = {".pyc", ".pyo"}
 
 # Map short model names to kernel directory paths (relative to repo root).
 KERNEL_DIRS = {
@@ -62,9 +73,75 @@ def _load_env() -> None:
     try:
         from dotenv import load_dotenv
 
-        load_dotenv()
+        load_dotenv(PROJECT_ROOT / ".env")
     except ImportError:
         return
+
+
+def _build_kaggle_bundle(model: str) -> Path:
+    """Create a self-contained bundle for Kaggle to run remotely.
+
+    Kaggle script pushes only keep the main code file, so we render a temporary
+    script with the project source embedded as a base64 zip payload.
+    """
+    kernel_dir = PROJECT_ROOT / KERNEL_DIRS[model]
+    if not kernel_dir.exists():
+        print(f"ERROR: Kernel directory not found: {kernel_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    bundle_dir = BUNDLE_ROOT / model
+    if bundle_dir.exists():
+        rmtree(bundle_dir)
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+
+    archive_buffer = io.BytesIO()
+    with zipfile.ZipFile(archive_buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for rel_path in BUNDLE_PATHS:
+            source_root = PROJECT_ROOT / rel_path
+            for path in source_root.rglob("*"):
+                if path.is_file() and _should_bundle_path(path):
+                    archive.write(path, arcname=path.relative_to(PROJECT_ROOT).as_posix())
+
+    script_template = (kernel_dir / "script.py").read_text(encoding="utf-8")
+    if BUNDLE_SENTINEL not in script_template:
+        print(
+            f"ERROR: Missing {BUNDLE_SENTINEL} placeholder in {kernel_dir / 'script.py'}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    bundle_b64 = base64.b64encode(archive_buffer.getvalue()).decode("ascii")
+    rendered_script = script_template.replace(BUNDLE_SENTINEL, bundle_b64, 1)
+    (bundle_dir / "script.py").write_text(rendered_script, encoding="utf-8")
+    metadata = _render_kernel_metadata(model)
+    (bundle_dir / "kernel-metadata.json").write_text(
+        json.dumps(metadata, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return bundle_dir
+
+
+def _render_kernel_metadata(model: str) -> dict[str, object]:
+    """Render the bundle metadata with the required Kaggle runtime flags."""
+    metadata_path = PROJECT_ROOT / KERNEL_DIRS[model] / "kernel-metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["id"] = KERNEL_SLUGS[model]
+    metadata["code_file"] = "script.py"
+    metadata["language"] = "python"
+    metadata["kernel_type"] = "script"
+    metadata["enable_gpu"] = True
+    metadata["enable_internet"] = True
+    return metadata
+
+
+def _should_bundle_path(path: Path) -> bool:
+    """Filter out local cache/build artefacts from the Kaggle source bundle."""
+    if path.suffix in EXCLUDED_BUNDLE_SUFFIXES:
+        return False
+    for part in path.parts:
+        if part in EXCLUDED_BUNDLE_DIRS or part.endswith(".egg-info"):
+            return False
+    return True
 
 
 def _ensure_kaggle_auth(model: str) -> None:
@@ -120,11 +197,14 @@ def _run(cmd: list[str]) -> None:
 def cmd_push(model: str) -> None:
     """Push a kernel folder to Kaggle (triggers a new run)."""
     _ensure_kaggle_auth(model)
-    kernel_dir = KERNEL_DIRS[model]
-    if not kernel_dir.exists():
-        print(f"ERROR: Kernel directory not found: {kernel_dir}", file=sys.stderr)
-        sys.exit(1)
-    _run(["kaggle", "kernels", "push", "-p", str(kernel_dir)])
+    bundle_dir = _build_kaggle_bundle(model)
+    print(
+        "NOTE: Kaggle runs remotely and will not inherit local .env values. "
+        "Add HF_TOKEN in Kaggle Secrets for authenticated HF dataset access "
+        "and automatic model uploads. Dispatch bundles always force Kaggle "
+        "internet and GPU on for training kernels."
+    )
+    _run(["kaggle", "kernels", "push", "-p", str(bundle_dir)])
 
 
 def cmd_status(model: str) -> None:
