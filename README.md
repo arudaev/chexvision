@@ -1,3 +1,15 @@
+---
+title: CheXVision
+emoji: "\U0001FA7B"
+colorFrom: blue
+colorTo: red
+sdk: streamlit
+sdk_version: 1.56.0
+app_file: app/app.py
+pinned: true
+python_version: "3.10"
+---
+
 # CheXVision
 
 **Large-Scale Chest X-Ray Pathology Detection** — Deep Learning & Big Data Project
