@@ -1,5 +1,5 @@
 {
-  "id": "HlexNC/chexvision-train-scratch",
+  "id": "hlexnc/chexvision-train-scratch-cnn",
   "title": "CheXVision Train Scratch CNN",
   "code_file": "script.py",
   "language": "python",
