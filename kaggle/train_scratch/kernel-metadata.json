@@ -8,6 +8,6 @@
   "enable_gpu": true,
   "enable_internet": true,
   "competition_sources": [],
-  "dataset_sources": [],
+  "dataset_sources": ["hlexnc/chexvision-secrets"],
   "kernel_data_sources": []
 }
