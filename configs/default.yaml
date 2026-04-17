@@ -14,12 +14,17 @@ data:
 
   augmentation:
     horizontal_flip: true
-    rotation_degrees: 10
+    rotation_degrees: 15
+    affine_translate: 0.05
+    affine_shear: 5
     color_jitter:
-      brightness: 0.2
-      contrast: 0.2
+      brightness: 0.3
+      contrast: 0.3
+      saturation: 0.05
+    gaussian_blur_prob: 0.2
+    random_erasing_prob: 0.1
 
-  # 14 pathology labels
+  # 14 pathology labels (NIH Chest X-ray14 ontology)
   labels:
     - Atelectasis
     - Cardiomegaly
@@ -46,6 +51,13 @@ training:
   warmup_epochs: 5
   early_stopping_patience: 10
   gradient_clip_norm: 1.0
+
+  # Automatic Mixed Precision — fp16 compute, fp32 params (~1.7x speedup on T4/P100)
+  use_amp: true
+
+  # Gradient accumulation — effective_batch = batch_size × grad_accum_steps
+  # 32 × 4 = 128 effective batch size for stable training
+  grad_accum_steps: 4
 
   # Task weights for combined loss
   multilabel_weight: 1.0

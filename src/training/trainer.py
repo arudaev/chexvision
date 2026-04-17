@@ -4,6 +4,16 @@ Uses raw PyTorch (no Lightning) so every design decision is explicit and justifi
 
 CLOUD-ONLY: This script is designed to run on cloud GPU environments (Google Colab, HF Spaces,
 university cluster). Do NOT run training on local machines — use notebooks in Colab instead.
+
+Key training techniques:
+- Automatic Mixed Precision (AMP): fp16 forward + backward, fp32 parameter updates.
+  ~1.7× speedup on T4/P100 GPUs with identical convergence. Enables fitting more epochs
+  in Kaggle's 9-hour window.
+- Gradient Accumulation: accumulate gradients across N mini-batches before an optimizer step.
+  Effective batch size = batch_size × grad_accum_steps (e.g. 32 × 4 = 128), which stabilises
+  training of larger models without exceeding GPU memory.
+- Weighted BCE: per-class pos_weight tensors address severe label imbalance
+  (e.g. Hernia <0.2% prevalence → pos_weight ≈ 500).
 """
 
 from __future__ import annotations
@@ -88,9 +98,10 @@ def build_model(config: dict) -> nn.Module:
         return CheXVisionScratch(
             in_channels=3,
             num_classes=14,
-            block_config=tuple(arch.get("block_config", [2, 2, 2, 2])),
+            block_config=tuple(arch.get("block_config", [3, 4, 6, 3])),
             filter_sizes=tuple(arch.get("filter_sizes", [64, 128, 256, 512])),
             dropout=arch.get("dropout", 0.5),
+            use_se=arch.get("use_se", True),
         )
     elif model_type == "densenet":
         arch = config["model"].get("architecture", {})
@@ -112,34 +123,63 @@ def train_one_epoch(
     pos_weight: torch.Tensor | None = None,
     multilabel_weight: float = 1.0,
     binary_weight: float = 0.5,
+    scaler: torch.cuda.amp.GradScaler | None = None,
+    grad_accum_steps: int = 1,
 ) -> dict[str, float]:
-    """Train for one epoch. Returns average losses."""
+    """Train for one epoch with optional AMP and gradient accumulation.
+
+    Args:
+        scaler: GradScaler for AMP; None disables AMP.
+        grad_accum_steps: Accumulate gradients over this many batches before stepping.
+            Effective batch size = batch_size × grad_accum_steps.
+    """
     model.train()
+    use_amp = scaler is not None
     total_multilabel_loss = 0.0
     total_binary_loss = 0.0
     total_combined_loss = 0.0
     num_batches = 0
 
-    # Loss functions
+    # Loss functions — BCEWithLogitsLoss is numerically stable (fused sigmoid + BCE)
     multilabel_criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight).to(device)
     binary_criterion = nn.BCEWithLogitsLoss().to(device)
 
-    for batch in tqdm(dataloader, desc="Training", leave=False):
+    optimizer.zero_grad()
+    num_steps = len(dataloader)
+
+    for step, batch in enumerate(tqdm(dataloader, desc="Training", leave=False)):
         images = batch["image"].to(device)
         ml_targets = batch["multilabel_target"].to(device)
         bin_targets = batch["binary_target"].to(device)
 
-        # Forward pass
-        outputs = model(images)
-        ml_loss = multilabel_criterion(outputs["multilabel_logits"], ml_targets)
-        bin_loss = binary_criterion(outputs["binary_logits"], bin_targets)
-        loss = combine_losses(ml_loss, bin_loss, multilabel_weight, binary_weight)
+        # AMP autocast: runs forward in fp16, accumulates gradients in fp32
+        with torch.cuda.amp.autocast(enabled=use_amp):
+            outputs = model(images)
+            ml_loss = multilabel_criterion(outputs["multilabel_logits"], ml_targets)
+            bin_loss = binary_criterion(outputs["binary_logits"], bin_targets)
+            loss = combine_losses(ml_loss, bin_loss, multilabel_weight, binary_weight)
 
-        # Backward pass
-        optimizer.zero_grad()
-        loss.backward()
-        nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-        optimizer.step()
+        # Scale loss down by accumulation steps so effective gradient magnitude is correct
+        backward_loss = loss / grad_accum_steps
+
+        if scaler is not None:
+            scaler.scale(backward_loss).backward()
+        else:
+            backward_loss.backward()
+
+        # Optimizer step only every grad_accum_steps (or at the final batch)
+        is_last_batch = (step + 1) == num_steps
+        if (step + 1) % grad_accum_steps == 0 or is_last_batch:
+            if scaler is not None:
+                # unscale before clip so gradient norms are in the correct (fp32) magnitude
+                scaler.unscale_(optimizer)
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            if scaler is not None:
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                optimizer.step()
+            optimizer.zero_grad()
 
         total_multilabel_loss += ml_loss.item()
         total_binary_loss += bin_loss.item()
@@ -193,13 +233,13 @@ def evaluate(
 
     # Concatenate
     ml_probs = np.concatenate(all_ml_probs)
-    ml_targets = np.concatenate(all_ml_targets)
+    ml_targets_np = np.concatenate(all_ml_targets)
     bin_probs = np.concatenate(all_bin_probs).squeeze(-1)
-    bin_targets = np.concatenate(all_bin_targets).squeeze(-1)
+    bin_targets_np = np.concatenate(all_bin_targets).squeeze(-1)
 
     # Compute metrics
-    ml_metrics = compute_multilabel_metrics(ml_targets, (ml_probs >= 0.5).astype(int), ml_probs)
-    bin_metrics = compute_binary_metrics(bin_targets, (bin_probs >= 0.5).astype(int), bin_probs)
+    ml_metrics = compute_multilabel_metrics(ml_targets_np, (ml_probs >= 0.5).astype(int), ml_probs)
+    bin_metrics = compute_binary_metrics(bin_targets_np, (bin_probs >= 0.5).astype(int), bin_probs)
 
     return {
         "val_multilabel_loss": total_ml_loss / max(num_batches, 1),
@@ -219,6 +259,13 @@ def train(config: dict) -> None:
 
     train_cfg = config["training"]
     data_cfg = config["data"]
+
+    # AMP and gradient accumulation setup
+    use_amp = train_cfg.get("use_amp", True) and device.type == "cuda"
+    grad_accum_steps = max(1, train_cfg.get("grad_accum_steps", 1))
+    scaler: torch.cuda.amp.GradScaler | None = torch.cuda.amp.GradScaler() if use_amp else None
+    logger.info("AMP: %s | Gradient accumulation steps: %d (effective batch: %d)",
+                use_amp, grad_accum_steps, train_cfg["batch_size"] * grad_accum_steps)
 
     # Build datasets
     data_dir = Path(data_cfg.get("data_dir", "data"))
@@ -263,7 +310,7 @@ def train(config: dict) -> None:
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     # History tracking for report figures
-    history: dict[str, list[float]] = {
+    history: dict[str, list] = {
         "train_combined_loss": [],
         "val_multilabel_loss": [],
         "auc_roc_macro": [],
@@ -279,7 +326,7 @@ def train(config: dict) -> None:
         if config["model"]["type"] == "densenet":
             freeze_epochs = config["model"].get("fine_tuning", {}).get("freeze_epochs", 5)
             if epoch == freeze_epochs + 1:
-                logger.info("Phase 2: Unfreezing DenseNet backbone")
+                logger.info("Phase 2: Unfreezing DenseNet backbone for end-to-end fine-tuning")
                 model.unfreeze_backbone()
                 unfreeze_lr = config["model"]["fine_tuning"].get("unfreeze_lr", 1e-4)
                 for param_group in optimizer.param_groups:
@@ -290,6 +337,8 @@ def train(config: dict) -> None:
             model, train_loader, optimizer, device, pos_weight,
             train_cfg.get("multilabel_weight", 1.0),
             train_cfg.get("binary_weight", 0.5),
+            scaler=scaler,
+            grad_accum_steps=grad_accum_steps,
         )
         scheduler.step()
 
@@ -317,12 +366,14 @@ def train(config: dict) -> None:
             best_auc = current_auc
             patience_counter = 0
             model_name = config["model"].get("name", "model")
+            # Store full val_metrics at best epoch for model card per-class AUC table
             torch.save({
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "best_auc": best_auc,
                 "config": config,
+                "best_val_metrics": val_metrics,  # Per-class AUC + all metrics at best epoch
             }, checkpoint_dir / f"{model_name}_best.pth")
             logger.info("  Saved best model (AUC: %.4f)", best_auc)
         else:

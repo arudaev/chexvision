@@ -1,4 +1,13 @@
-# CheXVision — Model 2: DenseNet-121 Transfer Learning (CheXNet)
+# CheXVision — Model 2: DenseNet-121 Transfer Learning (v2)
+#
+# v2 Upgrades:
+#   - 60 epochs: use more of the Kaggle 9h GPU budget (AMP makes this feasible)
+#   - AMP + grad_accum_steps=4: effective batch 128 for stable fine-tuning
+#   - Increased early_stopping_patience: give Phase 2 fine-tuning more room to converge
+#
+# Architecture note: DenseNet-121 with CheXNet-style dual-head fine-tuning.
+# CheXNet (Rajpurkar et al. 2017) achieved 0.841 macro AUC with single-head DenseNet-121.
+# We match that benchmark at v1 (0.8413) and target >0.86 at v2 with longer training.
 
 _defaults_: default.yaml
 
@@ -10,15 +19,18 @@ model:
   architecture:
     backbone: "densenet121"
     pretrained: true
-    freeze_features: false  # Fine-tune all layers
+    freeze_features: false  # Fine-tune all layers (after Phase 1 warmup)
     dropout: 0.3
 
-  # Fine-tuning strategy
+  # Two-phase fine-tuning strategy:
+  #   Phase 1 (epochs 1–5): freeze backbone, train feature_layer + heads only.
+  #     Rationale: prevents catastrophic forgetting of ImageNet features during the
+  #     initial high-LR classifier training.
+  #   Phase 2 (epoch 6+): unfreeze all, reduced LR for end-to-end refinement.
+  #     Rationale: allows domain adaptation of ImageNet features to chest X-ray textures.
   fine_tuning:
-    # Phase 1: Freeze backbone, train classifier (5 epochs)
     freeze_epochs: 5
     freeze_lr: 0.001
-    # Phase 2: Unfreeze all, lower LR (remaining epochs)
     unfreeze_lr: 0.0001
 
   # Dual classification heads
@@ -31,10 +43,13 @@ model:
       activation: "sigmoid"
 
 training:
-  epochs: 30
+  epochs: 60                   # More budget: target >0.86 AUC with longer fine-tuning
   batch_size: 32
   learning_rate: 0.0001
   weight_decay: 0.0001
   optimizer: "adamw"
   scheduler: "cosine"
   warmup_epochs: 3
+  early_stopping_patience: 15  # Allow Phase 2 to fully converge before stopping
+  use_amp: true
+  grad_accum_steps: 4          # Effective batch: 32 × 4 = 128
