@@ -429,7 +429,7 @@ datasets:
 ## Training Configuration
 
 - Repository: `{repo_id}`
-- Dataset: [{dataset_repo}](https://huggingface.co/datasets/{dataset_repo}) · revision `{dataset_revision[:8]}`
+- Dataset: [{dataset_repo}](https://huggingface.co/datasets/{dataset_repo}) · revision `{dataset_revision}`
 - Architecture: {arch_summary}
 - Platform: Kaggle GPU kernel (NVIDIA T4 / P100)
 {training_details}
