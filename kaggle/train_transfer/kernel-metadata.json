@@ -1,5 +1,5 @@
 {
-  "id": "HlexNC/chexvision-train-transfer",
+  "id": "hlexnc/chexvision-train-densenet-transfer",
   "title": "CheXVision Train DenseNet Transfer",
   "code_file": "script.py",
   "language": "python",
