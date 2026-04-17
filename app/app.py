@@ -68,7 +68,15 @@ def load_models() -> dict[str, torch.nn.Module]:
         device,
     )
     if ckpt:
-        model = CheXVisionScratch()
+        # Build with the exact architecture the checkpoint was trained with,
+        # not hardcoded defaults — so v1 and v2 checkpoints both load correctly.
+        arch = ckpt.get("config", {}).get("model", {}).get("architecture", {})
+        model = CheXVisionScratch(
+            block_config=tuple(arch.get("block_config", [3, 4, 6, 3])),
+            filter_sizes=tuple(arch.get("filter_sizes", [64, 128, 256, 512])),
+            dropout=arch.get("dropout", 0.5),
+            use_se=arch.get("use_se", True),
+        )
         model.load_state_dict(ckpt["model_state_dict"])
         model.to(device).eval()
         models["Custom CNN (From Scratch)"] = model
@@ -81,7 +89,11 @@ def load_models() -> dict[str, torch.nn.Module]:
         device,
     )
     if ckpt:
-        model = CheXVisionDenseNet(pretrained=False)
+        arch = ckpt.get("config", {}).get("model", {}).get("architecture", {})
+        model = CheXVisionDenseNet(
+            pretrained=False,
+            dropout=arch.get("dropout", 0.3),
+        )
         model.load_state_dict(ckpt["model_state_dict"])
         model.to(device).eval()
         models["DenseNet-121 (Transfer Learning)"] = model
