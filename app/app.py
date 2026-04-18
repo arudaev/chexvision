@@ -34,8 +34,8 @@ from src.models.scratch_cnn import CheXVisionScratch  # noqa: E402
 logger = logging.getLogger(__name__)
 
 # HF Hub model repos
-HF_SCRATCH_REPO = "HlexNC/chexvision-scratch"
-HF_DENSENET_REPO = "HlexNC/chexvision-densenet"
+HF_SCRATCH_REPO = "arudaev/chexvision-scratch"
+HF_DENSENET_REPO = "arudaev/chexvision-densenet"
 
 
 def _try_load_checkpoint(
@@ -230,7 +230,7 @@ def main() -> None:
     - Binary: Normal vs Abnormal
 
     [GitHub](https://github.com/arudaev/chexvision) |
-    [Dataset](https://huggingface.co/datasets/HlexNC/chest-xray-14)
+    [Dataset](https://huggingface.co/datasets/arudaev/chest-xray-14)
     """)
     sidebar_selected_sample = render_sidebar_samples()
 
@@ -243,8 +243,8 @@ def main() -> None:
         )
         st.info(
             "**Training status**: Check model repos at "
-            "[chexvision-scratch](https://huggingface.co/HlexNC/chexvision-scratch) and "
-            "[chexvision-densenet](https://huggingface.co/HlexNC/chexvision-densenet)"
+            "[chexvision-scratch](https://huggingface.co/arudaev/chexvision-scratch) and "
+            "[chexvision-densenet](https://huggingface.co/arudaev/chexvision-densenet)"
         )
         return
 

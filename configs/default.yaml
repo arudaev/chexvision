@@ -4,7 +4,7 @@
 seed: 42
 
 data:
-  dataset_name: "HlexNC/chest-xray-14-320"
+  dataset_name: "arudaev/chest-xray-14-320"
   image_size: 320
   # CLAHE: Contrast Limited Adaptive Histogram Equalisation — standard radiology preprocessing.
   # Enhances local contrast in the L channel (LAB space) before the network sees the image.
@@ -82,7 +82,7 @@ logging:
   log_every_n_steps: 100
 
 huggingface:
-  dataset_repo: "HlexNC/chest-xray-14-320"
-  scratch_model_repo: "HlexNC/chexvision-scratch"
-  transfer_model_repo: "HlexNC/chexvision-densenet"
-  space_repo: "HlexNC/chexvision-demo"
+  dataset_repo: "arudaev/chest-xray-14-320"
+  scratch_model_repo: "arudaev/chexvision-scratch"
+  transfer_model_repo: "arudaev/chexvision-densenet"
+  space_repo: "arudaev/chexvision-demo"

@@ -178,14 +178,14 @@ if best_ckpt.exists():
     checkpoint = torch.load(best_ckpt, map_location="cpu", weights_only=False)
     upload_model_artifacts(
         checkpoint_path=best_ckpt,
-        repo_id="HlexNC/chexvision-densenet",
+        repo_id="arudaev/chexvision-densenet",
         token=hf_token,
         checkpoint=checkpoint,
         history_path=history_file if history_file.exists() else None,
     )
     print(
         "Uploaded checkpoint, training history, config, and model card to "
-        "HlexNC/chexvision-densenet"
+        "arudaev/chexvision-densenet"
     )
 else:
     print(f"WARNING: Best checkpoint not found at {best_ckpt}")

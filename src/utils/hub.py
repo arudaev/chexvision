@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-HF_DATASET_REPO = "HlexNC/chest-xray-14-320"
+HF_DATASET_REPO = "arudaev/chest-xray-14-320"
 HF_DATASET_REVISION = os.environ.get(
     "CHEXVISION_DATASET_REVISION",
     "44443e6ee968b3c6094b63f14a27698c40b50680",
@@ -171,7 +171,7 @@ def _render_pipeline_diagram() -> str:
     """Mermaid flowchart of the full data→train→upload pipeline."""
     return """```mermaid
 flowchart TD
-    DS[("🗄️ HlexNC/chest-xray-14-320\n112,120 images · 36 shards · ~7.97 GB")]
+    DS[("🗄️ arudaev/chest-xray-14-320\n112,120 images · 36 shards · ~7.97 GB")]
     DS -->|snapshot_download| PREP["📂 data/images · data/labels.csv\ntrain 78,468 · val 11,210 · test 22,442"]
     PREP --> AUG["Augmentation Pipeline\nHFlip · Rotate±15° · RandomAffine\nColorJitter · GaussianBlur · RandomErasing"]
     AUG --> FWD["⚡ Model Forward Pass\ntorch.cuda.amp.autocast · fp16"]
@@ -442,7 +442,7 @@ It outputs two predictions per image:
 CheXNet (Rajpurkar et al., 2017) — the seminal paper establishing DenseNet-121 for chest X-ray
 classification — reported **0.841 macro AUC-ROC** on a comparable split of this dataset.
 CheXVision-DenseNet matches this benchmark. See the
-[CheXVision demo](https://huggingface.co/spaces/HlexNC/chexvision-demo) for live inference.
+[CheXVision demo](https://huggingface.co/spaces/arudaev/chexvision-demo) for live inference.
 
 ## Citation
 

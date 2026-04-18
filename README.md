@@ -15,8 +15,8 @@ python_version: "3.10"
 **Large-Scale Chest X-Ray Pathology Detection** — Deep Learning & Big Data Project
 
 [![CI](https://github.com/arudaev/chexvision/actions/workflows/ci.yml/badge.svg)](https://github.com/arudaev/chexvision/actions/workflows/ci.yml)
-[![Dataset](https://img.shields.io/badge/HF-Dataset-blue?logo=huggingface)](https://huggingface.co/datasets/HlexNC/chest-xray-14-320)
-[![Demo](https://img.shields.io/badge/HF-Demo-orange?logo=huggingface)](https://huggingface.co/spaces/HlexNC/chexvision-demo)
+[![Dataset](https://img.shields.io/badge/HF-Dataset-blue?logo=huggingface)](https://huggingface.co/datasets/arudaev/chest-xray-14-320)
+[![Demo](https://img.shields.io/badge/HF-Demo-orange?logo=huggingface)](https://huggingface.co/spaces/arudaev/chexvision-demo)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/framework-PyTorch-red.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -75,7 +75,7 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-    DS[("🗄️ HlexNC/chest-xray-14-320\n112,120 images · 36 shards · ~7.97 GB")]
+    DS[("🗄️ arudaev/chest-xray-14-320\n112,120 images · 36 shards · ~7.97 GB")]
     DS -->|snapshot_download| PREP["data/images  ·  data/labels.csv\ntrain 78,468  ·  val 11,210  ·  test 22,442"]
     PREP --> AUG["Augmentation Pipeline\nCLAHE (LAB space) · HFlip · Rotate±15°\nRandomAffine · ColorJitter · RandomErasing"]
     AUG --> FWD["⚡ Model Forward Pass\ntorch.cuda.amp.autocast · fp16"]
@@ -192,7 +192,7 @@ python scripts/dispatch.py kaggle output scratch
 
 The kernels automatically:
 1. Install dependencies
-2. Download the pinned dataset snapshot from `HlexNC/chest-xray-14-320`
+2. Download the pinned dataset snapshot from `arudaev/chest-xray-14-320`
 3. Train the model and save the best checkpoint by validation AUC-ROC
 4. Upload the checkpoint, training history JSON, config, and model card to HF Hub
 
@@ -204,7 +204,7 @@ The kernels automatically:
 streamlit run app/app.py
 ```
 
-Or visit the live Space: [HlexNC/chexvision-demo](https://huggingface.co/spaces/HlexNC/chexvision-demo)
+Or visit the live Space: [arudaev/chexvision-demo](https://huggingface.co/spaces/arudaev/chexvision-demo)
 
 The app loads trained checkpoints directly from HF Hub — no local files needed. It shows "No trained models available yet" until training completes.
 
@@ -221,7 +221,7 @@ python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.
 
 ## Dataset
 
-**NIH Chest X-ray14** — hosted at [`HlexNC/chest-xray-14-320`](https://huggingface.co/datasets/HlexNC/chest-xray-14-320)
+**NIH Chest X-ray14** — hosted at [`arudaev/chest-xray-14-320`](https://huggingface.co/datasets/arudaev/chest-xray-14-320)
 
 - **112,120** frontal-view chest X-ray images
 - **14 pathology labels**: Atelectasis, Cardiomegaly, Consolidation, Edema, Effusion, Emphysema, Fibrosis, Hernia, Infiltration, Mass, Nodule, Pleural Thickening, Pneumonia, Pneumothorax
@@ -288,11 +288,11 @@ All heavy compute runs in the cloud. Local machines are for editing and lightwei
 | Component | Platform | Notes |
 |-----------|----------|-------|
 | Source code | [GitHub](https://github.com/arudaev/chexvision) | CI on every push (lint, test, type check) |
-| Dataset | [HF Dataset](https://huggingface.co/datasets/HlexNC/chest-xray-14-320) | 36 Parquet shards · 320×320 · pinned revision |
+| Dataset | [HF Dataset](https://huggingface.co/datasets/arudaev/chest-xray-14-320) | 36 Parquet shards · 320×320 · pinned revision |
 | Training | [Kaggle kernels](kaggle/) | Free T4 GPU; `dispatch.py` fully automates push |
-| Model (scratch) | [HlexNC/chexvision-scratch](https://huggingface.co/HlexNC/chexvision-scratch) | Auto-uploaded by kernel after training |
-| Model (transfer) | [HlexNC/chexvision-densenet](https://huggingface.co/HlexNC/chexvision-densenet) | Auto-uploaded by kernel after training |
-| Demo | [HF Space](https://huggingface.co/spaces/HlexNC/chexvision-demo) | Auto-deployed by GitHub Actions on push to main |
+| Model (scratch) | [arudaev/chexvision-scratch](https://huggingface.co/arudaev/chexvision-scratch) | Auto-uploaded by kernel after training |
+| Model (transfer) | [arudaev/chexvision-densenet](https://huggingface.co/arudaev/chexvision-densenet) | Auto-uploaded by kernel after training |
+| Demo | [HF Space](https://huggingface.co/spaces/arudaev/chexvision-demo) | Auto-deployed by GitHub Actions on push to main |
 
 ---
 

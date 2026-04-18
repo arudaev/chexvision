@@ -3,7 +3,7 @@
 
 Usage:
     python scripts/push_models.py --checkpoint checkpoints/CheXVision-ResNet_best.pth
-    python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.pth --repo-id HlexNC/chexvision-densenet
+    python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.pth --repo-id arudaev/chexvision-densenet
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ from src.utils.hub import load_hf_token, upload_model_artifacts
 
 # Default repo IDs keyed by the model type stored in the checkpoint config.
 DEFAULT_REPOS = {
-    "scratch": "HlexNC/chexvision-scratch",
-    "densenet": "HlexNC/chexvision-densenet",
+    "scratch": "arudaev/chexvision-scratch",
+    "densenet": "arudaev/chexvision-densenet",
 }
 
 
@@ -48,7 +48,7 @@ def main() -> None:
         "--repo-id",
         type=str,
         default=None,
-        help="HuggingFace repo ID (e.g. HlexNC/chexvision-scratch). "
+        help="HuggingFace repo ID (e.g. arudaev/chexvision-scratch). "
         "Auto-detected from the checkpoint config if omitted.",
     )
     args = parser.parse_args()

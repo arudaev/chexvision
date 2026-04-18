@@ -13,7 +13,7 @@ from pathlib import Path
 from src.utils.hub import configure_hf_runtime
 
 SOURCE_REPO = "alkzar90/NIH-Chest-X-ray-dataset"
-TARGET_REPO = "HlexNC/chest-xray-14-320"
+TARGET_REPO = "arudaev/chest-xray-14-320"
 NUM_ZIPS = 12
 TARGET_SIZE = (320, 320)
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
@@ -624,7 +624,7 @@ def render_readme(stats: PipelineStats, config: PipelineConfig) -> str:
             "",
             "- Source split manifests come from `train_val_list.txt` and `test_list.txt`",
             "- Validation membership uses the same stable hash-bucket logic as the live",
-            "  `HlexNC/chest-xray-14` dataset",
+            "  `arudaev/chest-xray-14` dataset",
             "- Hidden `__MACOSX` ZIP entries and non-image members are ignored",
             "- Truncated-but-readable images are kept; truly unreadable files are skipped",
             "- This repo intentionally ships no `load_dataset.py` script so it remains a",
