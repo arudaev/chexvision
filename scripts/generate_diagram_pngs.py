@@ -429,6 +429,7 @@ def push_to_hf(png_paths: dict[str, Path]) -> None:
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main() -> None:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     print("\n=== Extracting Mermaid sources from hub.py ===")
     diagrams = get_diagrams()
     for name in diagrams:
