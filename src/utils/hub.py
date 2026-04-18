@@ -363,12 +363,16 @@ def render_model_card(
 
     # --- AMP / training details ---
     use_amp = train_cfg.get("use_amp", False)
+    use_clahe = data_cfg.get("clahe", False)
+    label_smoothing = train_cfg.get("label_smoothing", 0.0)
     grad_accum = train_cfg.get("grad_accum_steps", 1)
     effective_batch = train_cfg.get("batch_size", 32) * grad_accum
     training_details = (
         f"- Batch size: `{train_cfg.get('batch_size', 32)}` "
         f"× grad_accum `{grad_accum}` = **effective batch `{effective_batch}`**\n"
         f"- AMP (fp16): `{'enabled' if use_amp else 'disabled'}`\n"
+        f"- CLAHE preprocessing: `{'enabled' if use_clahe else 'disabled'}`\n"
+        f"- Label smoothing: `{label_smoothing}`\n"
         f"- Optimizer: AdamW  ·  Scheduler: CosineAnnealingLR\n"
         f"- Epochs configured: `{train_cfg.get('epochs', '?')}`  ·  "
         f"Early stop patience: `{train_cfg.get('early_stopping_patience', 10)}`"

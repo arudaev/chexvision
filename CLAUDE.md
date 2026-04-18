@@ -99,6 +99,10 @@ tests/                          # pytest unit tests (51 tests across 9 modules)
 - **`src.utils.hub`**: centralises all HF token resolution, upload logic, and model card rendering — Kaggle scripts import from here
 - **SE attention (scratch model)**: Squeeze-Excitation blocks after each residual stage for channel-wise recalibration — justified in the report as particularly suited to multi-label pathology detection
 - **320×320 training resolution**: dataset `HlexNC/chest-xray-14-320` — higher resolution than the 224px baseline for better small-lesion detection; batch size reduced to 24 (from 32) to stay within T4 VRAM
+- **CLAHE preprocessing** (`data.clahe: true`): Contrast Limited Adaptive Histogram Equalisation applied in LAB colour space before the network sees the image; enhances local contrast for low-contrast findings (Nodule, Infiltration, Pneumonia) without global brightness shifts; implemented as `CLAHETransform` in `src/data/transforms.py` with a lazy `cv2` import
+- **Label smoothing** (`training.label_smoothing: 0.1`): regularises against noisy NIH patient-level annotations; positive targets become `1 − ε`, negative targets become `ε / 2`; applied per-batch in `train_one_epoch` before BCE loss, so it is orthogonal to the `pos_weight` class balancing
+- **TTA at inference** (`use_tta=True` in `app.py` and `evaluate.py`): averages sigmoid probabilities over 4 views (original, h-flip, rotate ±7°) — reduces prediction variance with no training cost; implemented in `predict_with_tta()` using `torchvision.transforms.functional` (aliased as `transforms_functional` per ruff N812)
+- **Ensemble inference**: `predict_ensemble()` in `evaluate.py` and the Ensemble row in `app.py` average TTA probabilities from both models; the two architectures have different inductive biases and fail on different examples, so averaging improves macro AUC
 
 ---
 
@@ -231,7 +235,9 @@ Key fields:
 - `training.scheduler`: cosine annealing settings
 - `training.freeze_epochs`: (DenseNet only) epochs to train with frozen backbone
 - `training.grad_accum_steps`: `4` — effective batch = 24 × 4 = 96
+- `training.label_smoothing`: `0.1` — positive targets → 0.9, negative targets → 0.05
 - `data.image_size`: `320`
+- `data.clahe`: `true` — CLAHE contrast enhancement in LAB colour space (clip 2.0, tile 8×8)
 - `data.dataset_name`: `"HlexNC/chest-xray-14-320"`
 - `data.augmentation`: RandomHorizontalFlip, RandomRotation, ColorJitter, RandomErasing
 - `logging.checkpoint_dir`: where to save `.pth` files
