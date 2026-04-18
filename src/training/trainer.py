@@ -25,11 +25,12 @@ import os
 import random
 import sys
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import torch
 import torch.nn as nn
-import yaml
+import yaml  # type: ignore[import-untyped]
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
@@ -327,7 +328,7 @@ def train(config: dict) -> None:
             freeze_epochs = config["model"].get("fine_tuning", {}).get("freeze_epochs", 5)
             if epoch == freeze_epochs + 1:
                 logger.info("Phase 2: Unfreezing DenseNet backbone for end-to-end fine-tuning")
-                model.unfreeze_backbone()
+                cast(CheXVisionDenseNet, model).unfreeze_backbone()
                 unfreeze_lr = config["model"]["fine_tuning"].get("unfreeze_lr", 1e-4)
                 for param_group in optimizer.param_groups:
                     param_group["lr"] = unfreeze_lr
