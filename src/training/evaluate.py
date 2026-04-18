@@ -26,6 +26,7 @@ def load_model(checkpoint_path: Path, device: torch.device) -> tuple[torch.nn.Mo
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     config = checkpoint["config"]
 
+    model: torch.nn.Module
     if config["model"]["type"] == "scratch":
         arch = config["model"].get("architecture", {})
         model = CheXVisionScratch(

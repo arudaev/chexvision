@@ -121,8 +121,15 @@ class GradCAM:
     def _forward_hook(self, module: torch.nn.Module, input: tuple, output: torch.Tensor) -> None:
         self.activations = output.detach()
 
-    def _backward_hook(self, module: torch.nn.Module, grad_input: tuple, grad_output: tuple) -> None:
-        self.gradients = grad_output[0].detach()
+    def _backward_hook(
+        self,
+        module: torch.nn.Module,
+        grad_input: tuple[torch.Tensor, ...] | torch.Tensor,
+        grad_output: tuple[torch.Tensor, ...] | torch.Tensor,
+    ) -> tuple[torch.Tensor, ...] | torch.Tensor | None:
+        g = grad_output[0] if isinstance(grad_output, tuple) else grad_output
+        self.gradients = g.detach()
+        return None
 
     def generate(self, image: torch.Tensor, class_idx: int, task: str = "multilabel") -> np.ndarray:
         """Generate Grad-CAM heatmap for a given class.
@@ -148,6 +155,9 @@ class GradCAM:
         target.backward()
 
         # Global average pooling of gradients
+        assert self.gradients is not None and self.activations is not None, (
+            "Gradients/activations not captured — ensure backward() was called after generate()"
+        )
         weights = self.gradients.mean(dim=[2, 3], keepdim=True)
         cam = (weights * self.activations).sum(dim=1, keepdim=True)
         cam = functional.relu(cam)
