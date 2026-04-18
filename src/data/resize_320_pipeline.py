@@ -17,6 +17,7 @@ TARGET_REPO = "HlexNC/chest-xray-14-320"
 NUM_ZIPS = 12
 TARGET_SIZE = (320, 320)
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
+DOWNLOAD_HEADROOM_BYTES = 256 * 1024 * 1024
 EXPECTED_SPLIT_COUNTS = {
     "train": 77_967,
     "validation": 8_557,
@@ -162,16 +163,103 @@ def prepare_local_work_dir(config: PipelineConfig) -> None:
     (config.work_dir / "data").mkdir(parents=True, exist_ok=True)
 
 
-def download_source_metadata(token: str):
-    """Fetch source labels and split manifests from the HF Hub."""
-    import pandas as pd
+def local_download_dir(config: PipelineConfig, name: str) -> Path:
+    """Return a dedicated local download folder inside the pipeline work dir."""
+    return config.work_dir / name
+
+
+def ensure_disk_headroom(
+    download_dir: Path,
+    *,
+    repo_id: str,
+    filename: str,
+    repo_type: str,
+    token: str,
+) -> None:
+    """Fail early when the current filesystem cannot fit the next download."""
     from huggingface_hub import hf_hub_download
 
-    csv_path = hf_hub_download(
-        repo_id=SOURCE_REPO,
-        filename="data/Data_Entry_2017_v2020.csv",
+    download_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        dry_run_info = hf_hub_download(
+            repo_id=repo_id,
+            filename=filename,
+            repo_type=repo_type,
+            token=token,
+            dry_run=True,
+        )
+    except Exception as exc:
+        print(
+            f"[resize] Could not preflight {filename} disk usage "
+            f"({type(exc).__name__}: {exc}); continuing."
+        )
+        return
+
+    file_size = int(getattr(dry_run_info, "file_size", 0) or 0)
+    if file_size <= 0:
+        return
+
+    free_bytes = shutil.disk_usage(download_dir).free
+    required_bytes = file_size + DOWNLOAD_HEADROOM_BYTES
+    if free_bytes < required_bytes:
+        raise RuntimeError(
+            "Not enough free disk space to continue the resize_320 pipeline. "
+            f"Need at least {format_bytes(required_bytes)} free before downloading "
+            f"{filename}, but only {format_bytes(free_bytes)} is available in "
+            f"{download_dir}."
+        )
+
+    print(
+        f"[resize] Disk preflight for {filename}: need ~{format_bytes(file_size)} + "
+        f"{format_bytes(DOWNLOAD_HEADROOM_BYTES)} headroom, "
+        f"free={format_bytes(free_bytes)}"
+    )
+
+
+def download_source_file(
+    config: PipelineConfig,
+    *,
+    token: str,
+    filename: str,
+    download_name: str,
+) -> Path:
+    """Download one source file into a local throwaway folder we fully control."""
+    from huggingface_hub import hf_hub_download
+
+    download_dir = local_download_dir(config, download_name)
+    ensure_disk_headroom(
+        download_dir,
+        repo_id=config.source_repo,
+        filename=filename,
         repo_type="dataset",
         token=token,
+    )
+    return Path(
+        hf_hub_download(
+            repo_id=config.source_repo,
+            filename=filename,
+            repo_type="dataset",
+            token=token,
+            local_dir=str(download_dir),
+        )
+    )
+
+
+def cleanup_local_download_dir(config: PipelineConfig, name: str) -> None:
+    """Delete a local download folder and its `.cache/huggingface` metadata."""
+    shutil.rmtree(local_download_dir(config, name), ignore_errors=True)
+
+
+def download_source_metadata(config: PipelineConfig, token: str):
+    """Fetch source labels and split manifests from the HF Hub."""
+    import pandas as pd
+
+    metadata_dir_name = "source_metadata"
+    csv_path = download_source_file(
+        config,
+        token=token,
+        filename="data/Data_Entry_2017_v2020.csv",
+        download_name=metadata_dir_name,
     )
     labels_df = pd.read_csv(csv_path)
     label_map = {
@@ -179,20 +267,20 @@ def download_source_metadata(token: str):
         for _, row in labels_df.iterrows()
     }
 
-    train_val_path = hf_hub_download(
-        repo_id=SOURCE_REPO,
-        filename="data/train_val_list.txt",
-        repo_type="dataset",
+    train_val_path = download_source_file(
+        config,
         token=token,
+        filename="data/train_val_list.txt",
+        download_name=metadata_dir_name,
     )
     with open(train_val_path, encoding="utf-8") as handle:
         train_val_files = {line.strip() for line in handle if line.strip()}
 
-    test_path = hf_hub_download(
-        repo_id=SOURCE_REPO,
-        filename="data/test_list.txt",
-        repo_type="dataset",
+    test_path = download_source_file(
+        config,
         token=token,
+        filename="data/test_list.txt",
+        download_name=metadata_dir_name,
     )
     with open(test_path, encoding="utf-8") as handle:
         test_files = {line.strip() for line in handle if line.strip()}
@@ -304,18 +392,6 @@ def upload_parquet_shards(api, config: PipelineConfig, parquet_dir: Path, zip_na
     )
 
 
-def maybe_cleanup_downloaded_zip(config: PipelineConfig, zip_path: Path) -> None:
-    """Delete the cached source ZIP in Kaggle runs to keep disk usage stable."""
-    if not config.is_kaggle:
-        return
-
-    try:
-        zip_path.unlink()
-        print(f"[resize] Deleted cached ZIP {zip_path.name}")
-    except OSError:
-        print(f"[resize] Could not delete cached ZIP {zip_path.name}; continuing.")
-
-
 def process_zip(
     zip_index: int,
     config: PipelineConfig,
@@ -327,7 +403,6 @@ def process_zip(
     api=None,
 ) -> None:
     """Process one source ZIP into deterministic Parquet shard files."""
-    from huggingface_hub import hf_hub_download
     from PIL import ImageFile, UnidentifiedImageError
 
     ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -335,19 +410,18 @@ def process_zip(
     zip_name = f"images_{zip_index:03d}.zip"
     remote_path = f"data/images/{zip_name}"
     shard_index = zip_index - 1
+    download_dir_name = "source_zip"
 
     print(f"[resize] Processing {zip_name} ({zip_index}/{config.num_zips}) ...")
-    zip_path = Path(
-        hf_hub_download(
-            repo_id=config.source_repo,
-            filename=remote_path,
-            repo_type="dataset",
-            token=token,
-        )
+    zip_path = download_source_file(
+        config,
+        token=token,
+        filename=remote_path,
+        download_name=download_dir_name,
     )
     print(f"[resize] Downloaded {remote_path}")
 
-    buckets = {
+    buckets: dict[str, dict[str, list]] = {
         "train": {"image": [], "labels": [], "filename": []},
         "validation": {"image": [], "labels": [], "filename": []},
         "test": {"image": [], "labels": [], "filename": []},
@@ -356,84 +430,86 @@ def process_zip(
     zip_unreadable = 0
     zip_unknown = 0
 
-    with zipfile.ZipFile(zip_path, "r") as archive:
-        members = [info for info in archive.infolist() if is_supported_member(info)]
-        if config.max_images_per_zip is not None:
-            members = members[: config.max_images_per_zip]
+    try:
+        with zipfile.ZipFile(zip_path, "r") as archive:
+            members = [info for info in archive.infolist() if is_supported_member(info)]
+            if config.max_images_per_zip is not None:
+                members = members[: config.max_images_per_zip]
 
-        print(f"[resize] Found {len(members):,} candidate image entries in {zip_name}")
-        for member_index, info in enumerate(members, start=1):
-            filename = Path(info.filename).name
-            split = split_for(filename, train_val_files, test_files)
-            if split == "unknown":
-                zip_unknown += 1
-                stats.unknown_total += 1
-                if len(stats.unknown_samples) < MAX_UNKNOWN_SAMPLES:
-                    stats.unknown_samples.append(f"{zip_name}:{info.filename}")
-                continue
+            print(f"[resize] Found {len(members):,} candidate image entries in {zip_name}")
+            for member_index, info in enumerate(members, start=1):
+                filename = Path(info.filename).name
+                split = split_for(filename, train_val_files, test_files)
+                if split == "unknown":
+                    zip_unknown += 1
+                    stats.unknown_total += 1
+                    if len(stats.unknown_samples) < MAX_UNKNOWN_SAMPLES:
+                        stats.unknown_samples.append(f"{zip_name}:{info.filename}")
+                    continue
 
-            try:
-                payload = archive.read(info)
-                if not payload:
-                    raise ValueError("empty file")
-                image_payload = resize_image_payload(payload, config.target_size)
-            except (UnidentifiedImageError, OSError, ValueError) as exc:
-                zip_unreadable += 1
-                stats.unreadable_total += 1
-                if len(stats.unreadable_samples) < MAX_UNREADABLE_SAMPLES:
-                    stats.unreadable_samples.append(
-                        (zip_name, info.filename, f"{type(exc).__name__}: {exc}")
+                try:
+                    payload = archive.read(info)
+                    if not payload:
+                        raise ValueError("empty file")
+                    image_payload = resize_image_payload(payload, config.target_size)
+                except (UnidentifiedImageError, OSError, ValueError) as exc:
+                    zip_unreadable += 1
+                    stats.unreadable_total += 1
+                    if len(stats.unreadable_samples) < MAX_UNREADABLE_SAMPLES:
+                        stats.unreadable_samples.append(
+                            (zip_name, info.filename, f"{type(exc).__name__}: {exc}")
+                        )
+                    continue
+
+                buckets[split]["image"].append(image_payload)
+                buckets[split]["labels"].append(label_map.get(filename, "No Finding"))
+                buckets[split]["filename"].append(filename)
+                stats.split_counts[split] += 1
+                stats.total_images += 1
+
+                if member_index % 2000 == 0:
+                    print(
+                        f"[resize]   scanned {member_index:,}/{len(members):,} entries "
+                        f"in {zip_name}"
                     )
-                continue
 
-            buckets[split]["image"].append(image_payload)
-            buckets[split]["labels"].append(label_map.get(filename, "No Finding"))
-            buckets[split]["filename"].append(filename)
-            stats.split_counts[split] += 1
-            stats.total_images += 1
-
-            if member_index % 2000 == 0:
-                print(
-                    f"[resize]   scanned {member_index:,}/{len(members):,} entries "
-                    f"in {zip_name}"
-                )
-
-    print(
-        "[resize] Zip summary: "
-        f"train={len(buckets['train']['filename']):,}, "
-        f"validation={len(buckets['validation']['filename']):,}, "
-        f"test={len(buckets['test']['filename']):,}, "
-        f"skipped_unreadable={zip_unreadable:,}, "
-        f"skipped_unknown={zip_unknown:,}"
-    )
-
-    if config.skip_upload:
-        parquet_dir = config.work_dir / "data"
-        write_parquet_shards(
-            buckets=buckets,
-            output_dir=parquet_dir,
-            shard_index=shard_index,
-            shard_count=config.num_zips,
-            stats=stats,
+        print(
+            "[resize] Zip summary: "
+            f"train={len(buckets['train']['filename']):,}, "
+            f"validation={len(buckets['validation']['filename']):,}, "
+            f"test={len(buckets['test']['filename']):,}, "
+            f"skipped_unreadable={zip_unreadable:,}, "
+            f"skipped_unknown={zip_unknown:,}"
         )
-    else:
-        temp_dir = config.work_dir / f"tmp_{zip_name}"
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        try:
+
+        if config.skip_upload:
+            parquet_dir = config.work_dir / "data"
             write_parquet_shards(
                 buckets=buckets,
-                output_dir=temp_dir,
+                output_dir=parquet_dir,
                 shard_index=shard_index,
                 shard_count=config.num_zips,
                 stats=stats,
             )
-            upload_parquet_shards(api, config, temp_dir, zip_name)
-        finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
-
-    maybe_cleanup_downloaded_zip(config, zip_path)
+        else:
+            temp_dir = config.work_dir / f"tmp_{zip_name}"
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir)
+            temp_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                write_parquet_shards(
+                    buckets=buckets,
+                    output_dir=temp_dir,
+                    shard_index=shard_index,
+                    shard_count=config.num_zips,
+                    stats=stats,
+                )
+                upload_parquet_shards(api, config, temp_dir, zip_name)
+            finally:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+    finally:
+        cleanup_local_download_dir(config, download_dir_name)
+        print(f"[resize] Deleted local download dir for {zip_name}")
 
 
 def format_bytes(num_bytes: int) -> str:
@@ -622,7 +698,7 @@ def run_resize_320_pipeline(config: PipelineConfig | None = None) -> PipelineSta
         f"skip_upload={config.skip_upload}"
     )
     print("[resize] Downloading source metadata ...")
-    label_map, train_val_files, test_files = download_source_metadata(hf_token)
+    label_map, train_val_files, test_files = download_source_metadata(config, hf_token)
     manifest_counts = verify_split_contract(train_val_files, test_files)
     print(
         "[resize] Verified split contract: "
