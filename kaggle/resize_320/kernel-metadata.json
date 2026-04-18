@@ -1,0 +1,13 @@
+{
+  "id": "hlexnc/chexvision-resize-320",
+  "title": "chexvision-resize-320",
+  "code_file": "script.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "competition_sources": [],
+  "dataset_sources": ["hlexnc/chexvision-secrets"],
+  "kernel_data_sources": []
+}

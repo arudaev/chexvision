@@ -179,7 +179,7 @@ def main() -> None:
 
                 if detected:
                     for label, prob in sorted(detected, key=lambda x: -x[1]):
-                        st.progress(prob, text=f"{label}: {prob:.1%}")
+                        st.progress(float(prob), text=f"{label}: {prob:.1%}")
                 else:
                     st.success("No pathologies detected above threshold.")
 

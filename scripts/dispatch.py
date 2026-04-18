@@ -32,14 +32,16 @@ EXCLUDED_BUNDLE_SUFFIXES = {".pyc", ".pyo"}
 
 # Map short model names to kernel directory paths (relative to repo root).
 KERNEL_DIRS = {
-    "scratch": Path("kaggle/train_scratch"),
-    "transfer": Path("kaggle/train_transfer"),
+    "scratch":    Path("kaggle/train_scratch"),
+    "transfer":   Path("kaggle/train_transfer"),
+    "resize_320": Path("kaggle/resize_320"),
 }
 
 # Kaggle kernel slugs (must match the "id" in kernel-metadata.json).
 KERNEL_SLUGS = {
-    "scratch": "hlexnc/chexvision-train-scratch-cnn",
-    "transfer": "hlexnc/chexvision-train-densenet-transfer",
+    "scratch":    "hlexnc/chexvision-train-scratch-cnn",
+    "transfer":   "hlexnc/chexvision-train-densenet-transfer",
+    "resize_320": "hlexnc/chexvision-resize-320",
 }
 
 
@@ -103,16 +105,13 @@ def _build_kaggle_bundle(model: str) -> Path:
                     archive.write(path, arcname=path.relative_to(PROJECT_ROOT).as_posix())
 
     script_template = (kernel_dir / "script.py").read_text(encoding="utf-8")
-    if BUNDLE_SENTINEL not in script_template:
-        print(
-            f"ERROR: Missing {BUNDLE_SENTINEL} placeholder in {kernel_dir / 'script.py'}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    bundle_b64 = base64.b64encode(archive_buffer.getvalue()).decode("ascii")
-    rendered_script = script_template.replace(BUNDLE_SENTINEL, bundle_b64, 1)
-    (bundle_dir / "script.py").write_text(rendered_script, encoding="utf-8")
+    if BUNDLE_SENTINEL in script_template:
+        bundle_b64 = base64.b64encode(archive_buffer.getvalue()).decode("ascii")
+        rendered_script = script_template.replace(BUNDLE_SENTINEL, bundle_b64, 1)
+        (bundle_dir / "script.py").write_text(rendered_script, encoding="utf-8")
+    else:
+        # Self-contained script (e.g. resize_320) — no bundle injection needed.
+        (bundle_dir / "script.py").write_text(script_template, encoding="utf-8")
     metadata = _render_kernel_metadata(model)
     (bundle_dir / "kernel-metadata.json").write_text(
         json.dumps(metadata, indent=2) + "\n",
@@ -129,7 +128,8 @@ def _render_kernel_metadata(model: str) -> dict[str, object]:
     metadata["code_file"] = "script.py"
     metadata["language"] = "python"
     metadata["kernel_type"] = "script"
-    metadata["enable_gpu"] = True
+    # enable_gpu comes from kernel-metadata.json; training kernels set it true,
+    # CPU-only kernels (e.g. resize_320) set it false — don't override here.
     metadata["enable_internet"] = True
     return metadata
 
@@ -234,17 +234,19 @@ def main() -> None:
     kaggle_parser = subparsers.add_parser("kaggle", help="Kaggle kernel operations")
     kaggle_sub = kaggle_parser.add_subparsers(dest="action", help="Action to perform")
 
+    _all_kernels = ["scratch", "transfer", "resize_320"]
+
     # kaggle push (default when just model name given)
     push_parser = kaggle_sub.add_parser("push", help="Push kernel to Kaggle")
-    push_parser.add_argument("model", choices=["scratch", "transfer"])
+    push_parser.add_argument("model", choices=_all_kernels)
 
     # kaggle status
     status_parser = kaggle_sub.add_parser("status", help="Check kernel status")
-    status_parser.add_argument("model", choices=["scratch", "transfer"])
+    status_parser.add_argument("model", choices=_all_kernels)
 
     # kaggle output
     output_parser = kaggle_sub.add_parser("output", help="Download kernel output")
-    output_parser.add_argument("model", choices=["scratch", "transfer"])
+    output_parser.add_argument("model", choices=_all_kernels)
 
     args = parser.parse_args()
 
@@ -281,7 +283,7 @@ def main() -> None:
 
 def _preprocess_argv() -> None:
     """Rewrite argv so that `kaggle <model>` becomes `kaggle push <model>`."""
-    model_names = {"scratch", "transfer"}
+    model_names = {"scratch", "transfer", "resize_320"}
     # Pattern: script kaggle <model>  (3 args after script name, 2nd is kaggle, 3rd is model)
     if len(sys.argv) >= 3 and sys.argv[1] == "kaggle" and sys.argv[2] in model_names:
         # Insert "push" between "kaggle" and the model name
