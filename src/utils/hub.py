@@ -171,34 +171,18 @@ def _render_pipeline_diagram() -> str:
     """Mermaid flowchart of the full data→train→upload pipeline."""
     return """```mermaid
 flowchart TD
-    DS[("🗄️ HlexNC/chest-xray-14
-    112,120 chest X-ray images
-    36 parquet shards · ~4.7 GB")] -->|snapshot_download| PREP["📂 data/images/  ·  data/labels.csv
-    train 78,468 · val 11,210 · test 22,442"]
-    PREP --> AUG["Augmentation Pipeline
-    HFlip · Rotate±15° · RandomAffine
-    ColorJitter · GaussianBlur · RandomErasing
-    ImageNet normalize  ⟨mean=[0.485,0.456,0.406]⟩"]
-    AUG --> FWD["⚡ Model Forward Pass
-    torch.cuda.amp.autocast  ·  fp16"]
-    FWD --> ML["multilabel_logits  B×14
-    WeightedBCE + pos_weight
-    14 pathology classes"]
-    FWD --> BIN["binary_logits  B×1
-    BCE loss
-    Normal vs. Abnormal"]
-    ML --> LOSS["Combined Loss
-    1.0 × multilabel  +  0.5 × binary"]
+    DS[("🗄️ HlexNC/chest-xray-14\n112,120 images · 36 shards · ~4.7 GB")]
+    DS -->|snapshot_download| PREP["📂 data/images · data/labels.csv\ntrain 78,468 · val 11,210 · test 22,442"]
+    PREP --> AUG["Augmentation Pipeline\nHFlip · Rotate±15° · RandomAffine\nColorJitter · GaussianBlur · RandomErasing"]
+    AUG --> FWD["⚡ Model Forward Pass\ntorch.cuda.amp.autocast · fp16"]
+    FWD --> ML["multilabel_logits B×14\nWeightedBCE + pos_weight · 14 classes"]
+    FWD --> BIN["binary_logits B×1\nBCE · Normal vs. Abnormal"]
+    ML --> LOSS["Combined Loss\n1.0 × multilabel + 0.5 × binary"]
     BIN --> LOSS
-    LOSS --> BACK["Backward  ·  Grad Clip 1.0
-    Gradient Accumulation ×4
-    effective batch = 128"]
-    BACK --> OPT["AdamW step  ·  CosineAnnealingLR
-    early stop patience = 15"]
-    OPT -->|"↑ val macro AUC-ROC"| BEST["💾 Best Checkpoint
-    model_state + best_val_metrics + config"]
-    BEST -->|upload_model_artifacts| HUB["🤗 HF Hub
-    checkpoint  ·  history.json  ·  model card"]
+    LOSS --> BACK["Backward · Grad Clip 1.0\nGradient Accumulation ×4 · eff. batch 128"]
+    BACK --> OPT["AdamW · CosineAnnealingLR\nearly stop patience = 15"]
+    OPT -->|"↑ best val AUC-ROC"| BEST["💾 Best Checkpoint\nmodel_state · best_val_metrics · config"]
+    BEST -->|upload_model_artifacts| HUB["🤗 HF Hub\ncheckpoint · history.json · model card"]
 ```"""
 
 
