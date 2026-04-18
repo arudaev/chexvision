@@ -126,6 +126,7 @@ def train_one_epoch(
     binary_weight: float = 0.5,
     scaler: torch.cuda.amp.GradScaler | None = None,
     grad_accum_steps: int = 1,
+    label_smoothing: float = 0.0,
 ) -> dict[str, float]:
     """Train for one epoch with optional AMP and gradient accumulation.
 
@@ -152,6 +153,12 @@ def train_one_epoch(
         images = batch["image"].to(device)
         ml_targets = batch["multilabel_target"].to(device)
         bin_targets = batch["binary_target"].to(device)
+
+        # Label smoothing: pull hard 0/1 targets toward 0.5 by epsilon.
+        # Regularises against noisy NIH patient-level labels without changing architecture.
+        if label_smoothing > 0.0:
+            ml_targets = ml_targets * (1.0 - label_smoothing) + label_smoothing * 0.5
+            bin_targets = bin_targets * (1.0 - label_smoothing) + label_smoothing * 0.5
 
         # AMP autocast: runs forward in fp16, accumulates gradients in fp32
         with torch.cuda.amp.autocast(enabled=use_amp):
@@ -274,8 +281,17 @@ def train(config: dict) -> None:
     # ChestXrayDataset joins image_dir with each path, so pass data_dir directly —
     # not data_dir/"images" — to avoid a doubled images/images/ prefix.
     labels_csv = data_dir / "labels.csv"
-    train_dataset = ChestXrayDataset(data_dir, labels_csv, split="train", image_size=data_cfg["image_size"])
-    val_dataset = ChestXrayDataset(data_dir, labels_csv, split="val", image_size=data_cfg["image_size"])
+    image_size = data_cfg["image_size"]
+    use_clahe = data_cfg.get("clahe", True)
+    from src.data.transforms import get_eval_transforms, get_train_transforms
+    train_dataset = ChestXrayDataset(
+        data_dir, labels_csv, split="train",
+        transform=get_train_transforms(image_size, use_clahe=use_clahe),
+    )
+    val_dataset = ChestXrayDataset(
+        data_dir, labels_csv, split="val",
+        transform=get_eval_transforms(image_size, use_clahe=use_clahe),
+    )
 
     train_loader = DataLoader(
         train_dataset,
@@ -340,6 +356,7 @@ def train(config: dict) -> None:
             train_cfg.get("binary_weight", 0.5),
             scaler=scaler,
             grad_accum_steps=grad_accum_steps,
+            label_smoothing=train_cfg.get("label_smoothing", 0.0),
         )
         scheduler.step()
 

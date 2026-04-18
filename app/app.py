@@ -106,19 +106,55 @@ def load_models() -> dict[str, torch.nn.Module]:
     return models
 
 
-def predict(model: torch.nn.Module, image: Image.Image) -> dict[str, np.ndarray]:
-    """Run inference on a single image."""
+def _render_predictions(result: dict[str, np.ndarray]) -> None:
+    """Render binary screening result and pathology bars for one prediction dict."""
+    binary_label = "Abnormal" if result["binary_prob"] > 0.5 else "Normal"
+    confidence = result["binary_prob"] if binary_label == "Abnormal" else 1 - result["binary_prob"]
+    st.metric("Screening", f"{binary_label} ({confidence:.1%})")
+
+    st.markdown("**Detected Pathologies:**")
+    probs = result["multilabel_probs"]
+    detected = [(PATHOLOGY_LABELS[i], probs[i]) for i in range(len(PATHOLOGY_LABELS)) if probs[i] > 0.5]
+    if detected:
+        for label, prob in sorted(detected, key=lambda x: -x[1]):
+            st.progress(float(prob), text=f"{label}: {prob:.1%}")
+    else:
+        st.success("No pathologies detected above threshold.")
+
+
+def predict(model: torch.nn.Module, image: Image.Image, use_tta: bool = True) -> dict[str, np.ndarray]:
+    """Run inference on a single image, optionally with Test-Time Augmentation.
+
+    TTA averages predictions over 4 views: original, h-flip, rotate+7°, rotate-7°.
+    Reduces prediction variance with no additional training cost.
+    """
+    import torchvision.transforms.functional as transforms_functional
+
     device = next(model.parameters()).device
     transform = get_eval_transforms(320)
     tensor = transform(image).unsqueeze(0).to(device)
 
+    augmented = [tensor]
+    if use_tta:
+        augmented += [
+            transforms_functional.hflip(tensor),
+            transforms_functional.rotate(tensor, angle=7),
+            transforms_functional.rotate(tensor, angle=-7),
+        ]
+
+    ml_sum = torch.zeros(1, 14, device=device)
+    bin_sum = torch.zeros(1, 1, device=device)
+
     with torch.no_grad():
-        outputs = model(tensor)
+        for aug in augmented:
+            outputs = model(aug)
+            ml_sum += torch.sigmoid(outputs["multilabel_logits"])
+            bin_sum += torch.sigmoid(outputs["binary_logits"])
 
-    ml_probs = torch.sigmoid(outputs["multilabel_logits"]).cpu().numpy()[0]
-    bin_prob = torch.sigmoid(outputs["binary_logits"]).cpu().numpy()[0, 0]
+    ml_probs = (ml_sum / len(augmented)).cpu().numpy()[0]
+    bin_prob = float((bin_sum / len(augmented)).cpu().numpy()[0, 0])
 
-    return {"multilabel_probs": ml_probs, "binary_prob": float(bin_prob)}
+    return {"multilabel_probs": ml_probs, "binary_prob": bin_prob}
 
 
 @st.cache_data(show_spinner=False)
@@ -241,26 +277,21 @@ def main() -> None:
                 st.caption(image_note)
 
         with col2:
+            all_results = {}
             for model_name, model in models.items():
                 st.subheader(model_name)
-                result = predict(model, image)
+                result = predict(model, image, use_tta=True)
+                all_results[model_name] = result
+                _render_predictions(result)
+                st.divider()
 
-                # Binary classification
-                binary_label = "Abnormal" if result["binary_prob"] > 0.5 else "Normal"
-                confidence = result["binary_prob"] if binary_label == "Abnormal" else 1 - result["binary_prob"]
-                st.metric("Screening", f"{binary_label} ({confidence:.1%})")
-
-                # Multi-label classification
-                st.markdown("**Detected Pathologies:**")
-                probs = result["multilabel_probs"]
-                detected = [(PATHOLOGY_LABELS[i], probs[i]) for i in range(len(PATHOLOGY_LABELS)) if probs[i] > 0.5]
-
-                if detected:
-                    for label, prob in sorted(detected, key=lambda x: -x[1]):
-                        st.progress(float(prob), text=f"{label}: {prob:.1%}")
-                else:
-                    st.success("No pathologies detected above threshold.")
-
+            # Ensemble: show when both models are loaded
+            if len(models) >= 2:
+                st.subheader("Ensemble (CNN + DenseNet + TTA)")
+                st.caption("Average of both models with test-time augmentation — typically the most reliable prediction.")
+                ml_avg = np.mean([r["multilabel_probs"] for r in all_results.values()], axis=0)
+                bin_avg = float(np.mean([r["binary_prob"] for r in all_results.values()]))
+                _render_predictions({"multilabel_probs": ml_avg, "binary_prob": bin_avg})
                 st.divider()
 
 
