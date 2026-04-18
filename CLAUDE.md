@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-CheXVision is a university deep-learning project for chest X-ray pathology detection using the NIH Chest X-ray14 dataset (112,120 images, 14 disease labels). We implement two PyTorch models (custom CNN from scratch + DenseNet-121 transfer learning) on two tasks (14-class multi-label classification + binary normal/abnormal). Deadline: **June 23, 2026**. Course: Deep Learning & Big Data, AIN program, "BIG D(ATA)" team.
+CheXVision is a university deep-learning project for chest X-ray pathology detection using the NIH Chest X-ray14 dataset (112,120 images, 14 disease labels). We implement two PyTorch models (custom ResNet CNN from scratch + DenseNet-121 transfer learning) on two tasks (14-class multi-label classification + binary normal/abnormal). Deadline: **June 23, 2026**. Course: Deep Learning & Big Data, AIN program, "BIG D(ATA)" team.
 
 ---
 
@@ -11,49 +11,55 @@ CheXVision is a university deep-learning project for chest X-ray pathology detec
 ```
 src/
 ├── data/
-│   ├── dataset.py            # ChestXrayDataset, PATHOLOGY_LABELS, NUM_CLASSES
-│   ├── transforms.py         # get_train_transforms() / get_eval_transforms()
-│   └── download.py           # download_dataset() — snapshot_download wrapper
+│   ├── dataset.py              # ChestXrayDataset, PATHOLOGY_LABELS, NUM_CLASSES
+│   ├── transforms.py           # get_train_transforms() / get_eval_transforms()
+│   ├── download.py             # download_dataset() — snapshot_download wrapper
+│   └── resize_320_pipeline.py  # Kaggle kernel: raw NIH ZIPs → 320×320 parquet shards
 ├── models/
-│   ├── scratch_cnn.py        # CheXVisionScratch — residual CNN, dual heads
-│   └── densenet_transfer.py  # CheXVisionDenseNet — DenseNet-121 fine-tuning
+│   ├── scratch_cnn.py          # CheXVisionScratch — ResNet-50-depth CNN + SE, dual heads
+│   └── densenet_transfer.py    # CheXVisionDenseNet — DenseNet-121 fine-tuning
 ├── training/
-│   ├── trainer.py            # train() — main entry point, config merging, history
-│   ├── metrics.py            # compute_multilabel_metrics(), compute_binary_metrics()
-│   └── evaluate.py           # post-training evaluation, model comparison
+│   ├── trainer.py              # train() — main entry point, config merging, history
+│   ├── metrics.py              # compute_multilabel_metrics(), compute_binary_metrics()
+│   └── evaluate.py             # post-training evaluation, model comparison
 └── utils/
-    ├── hub.py                # load_hf_token(), configure_hf_runtime(),
-    │                         # upload_model_artifacts(), render_model_card()
-    └── visualization.py      # Grad-CAM, ROC curves, training history plots
+    ├── hub.py                  # load_hf_token(), configure_hf_runtime(),
+    │                           # upload_model_artifacts(), render_model_card()
+    └── visualization.py        # Grad-CAM, ROC curves, training history plots
 
 scripts/
-├── eda.py                    # EDA — streams metadata from HF, saves plots
-├── dispatch.py               # Kaggle kernel dispatch (build bundle, push, status)
-└── push_models.py            # Manual HF Hub upload (recovery path)
+├── eda.py                      # EDA — streams metadata from HF, saves plots
+├── dispatch.py                 # Kaggle kernel dispatch (build bundle, push, status)
+├── push_models.py              # Manual HF Hub upload (recovery path)
+└── generate_diagram_pngs.py    # Render Mermaid source → PNG via Playwright + Pillow,
+                                # then push PNGs to HF Hub model cards
 
 kaggle/
 ├── train_scratch/
-│   ├── kernel-metadata.json  # id, enable_gpu, enable_internet, dataset_sources
-│   └── script.py             # Self-contained training script (template with placeholder)
+│   ├── kernel-metadata.json    # id, enable_gpu, enable_internet, dataset_sources
+│   └── script.py               # Self-contained training script (template with placeholder)
 └── train_transfer/
     ├── kernel-metadata.json
     └── script.py
 
 configs/
-├── default.yaml              # Base config — all kernels start from this
-├── scratch.yaml              # Overrides: model.type=scratch, input_channels=3
-└── transfer.yaml             # Overrides: model.type=densenet, freeze_epochs
+├── default.yaml                # Base config — all kernels start from this
+├── scratch.yaml                # Overrides: model.type=scratch, SE attention, 100 epochs
+└── transfer.yaml               # Overrides: model.type=densenet, freeze_epochs, 60 epochs
 
 app/
-└── app.py                    # Streamlit demo — hf_hub_download for checkpoints
+└── app.py                      # Streamlit demo — hf_hub_download for checkpoints
 
-tests/                        # pytest unit tests (~34 tests, 6 modules)
+tests/                          # pytest unit tests (51 tests across 9 modules)
 ├── test_dataset.py
 ├── test_metrics.py
 ├── test_transforms.py
+├── test_models.py
 ├── test_hub.py
 ├── test_download.py
-└── test_dispatch.py
+├── test_dispatch.py
+├── test_resize_320_pipeline.py
+└── test_app_bootstrap.py
 ```
 
 ---
@@ -91,6 +97,8 @@ tests/                        # pytest unit tests (~34 tests, 6 modules)
 - **YAML config inheritance**: configs declare `_defaults_: default.yaml`; `_load_config()` deep-merges before training
 - **History JSON**: trainer saves per-epoch metrics to `{model}_history.json` alongside checkpoints for report figures
 - **`src.utils.hub`**: centralises all HF token resolution, upload logic, and model card rendering — Kaggle scripts import from here
+- **SE attention (scratch model)**: Squeeze-Excitation blocks after each residual stage for channel-wise recalibration — justified in the report as particularly suited to multi-label pathology detection
+- **320×320 training resolution**: dataset `HlexNC/chest-xray-14-320` — higher resolution than the 224px baseline for better small-lesion detection; batch size reduced to 24 (from 32) to stay within T4 VRAM
 
 ---
 
@@ -111,6 +119,9 @@ mypy src/ --ignore-missing-imports
 
 # EDA (lightweight — streams metadata only, no full download)
 python scripts/eda.py --num-samples 5000 --output-dir results/eda
+
+# Regenerate model card diagram PNGs (requires Playwright + Chromium)
+python scripts/generate_diagram_pngs.py
 
 # Streamlit demo (loads models from HF Hub)
 streamlit run app/app.py
@@ -153,7 +164,7 @@ python scripts/dispatch.py kaggle output scratch  # download output files
 
 | Resource | ID |
 |----------|----|
-| Dataset | `HlexNC/chest-xray-14` |
+| Dataset (320×320) | `HlexNC/chest-xray-14-320` |
 | Model — scratch CNN | `HlexNC/chexvision-scratch` |
 | Model — DenseNet | `HlexNC/chexvision-densenet` |
 | Demo Space (Streamlit) | `HlexNC/chexvision-demo` |
@@ -212,20 +223,25 @@ All hyperparameters are in `configs/*.yaml`. The `_defaults_` key triggers deep 
 
 Key fields:
 - `model.type`: `"scratch"` or `"densenet"`
-- `model.input_channels`: `3` (RGB — both models)
-- `training.epochs`, `training.batch_size`, `training.lr`
+- `model.architecture.use_se`: `true` (scratch only — SE channel attention)
+- `model.architecture.block_config`: `[3, 4, 6, 3]` (scratch — ResNet-50 depth)
+- `training.epochs`: 100 (scratch) / 60 (transfer)
+- `training.batch_size`: `24` (320×320 images; reduced from 32 to fit T4 VRAM)
 - `training.optimizer`: AdamW settings
 - `training.scheduler`: cosine annealing settings
 - `training.freeze_epochs`: (DenseNet only) epochs to train with frozen backbone
-- `data.image_size`: `224`
-- `data.augmentation`: RandomHorizontalFlip, RandomRotation, ColorJitter
+- `training.grad_accum_steps`: `4` — effective batch = 24 × 4 = 96
+- `data.image_size`: `320`
+- `data.dataset_name`: `"HlexNC/chest-xray-14-320"`
+- `data.augmentation`: RandomHorizontalFlip, RandomRotation, ColorJitter, RandomErasing
 - `logging.checkpoint_dir`: where to save `.pth` files
 
 ---
 
 ## Important Notes
 
-- The raw NIH dataset is ~45 GB. `HlexNC/chest-xray-14` stores pre-resized 224×224 parquet shards (~4.7 GB, 36 shards).
-- Always pin `HF_DATASET_REVISION` to a specific commit hash for reproducible training runs.
+- The raw NIH dataset is ~45 GB. `HlexNC/chest-xray-14-320` stores pre-resized 320×320 parquet shards (~7.97 GB, 36 shards).
+- Always pin `HF_DATASET_REVISION` in `src/utils/hub.py` to a specific commit hash for reproducible training runs.
 - The report must justify every architectural decision — keep code comments explaining *why*, not *what*.
 - Grad-CAM and ROC curve figures for the report are generated by `src/utils/visualization.py`.
+- Model card PNG diagrams are generated by `scripts/generate_diagram_pngs.py` (Playwright + Mermaid.js CDN) and pushed directly to the HF Hub model repos. Re-run the script if Mermaid source changes in `src/utils/hub.py`.
