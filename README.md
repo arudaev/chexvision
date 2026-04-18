@@ -15,7 +15,7 @@ python_version: "3.10"
 **Large-Scale Chest X-Ray Pathology Detection** — Deep Learning & Big Data Project
 
 [![CI](https://github.com/arudaev/chexvision/actions/workflows/ci.yml/badge.svg)](https://github.com/arudaev/chexvision/actions/workflows/ci.yml)
-[![Dataset](https://img.shields.io/badge/HF-Dataset-blue?logo=huggingface)](https://huggingface.co/datasets/HlexNC/chest-xray-14)
+[![Dataset](https://img.shields.io/badge/HF-Dataset-blue?logo=huggingface)](https://huggingface.co/datasets/HlexNC/chest-xray-14-320)
 [![Demo](https://img.shields.io/badge/HF-Demo-orange?logo=huggingface)](https://huggingface.co/spaces/HlexNC/chexvision-demo)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/framework-PyTorch-red.svg)](https://pytorch.org/)
@@ -46,25 +46,47 @@ We implement and compare two deep learning approaches on two distinct tasks:
 
 ## Architecture
 
+Both models share the same dual-head design: one forward pass produces both a 14-class multi-label output and a binary normal/abnormal output.
+
+```mermaid
+flowchart TB
+    IMG["📷 Input: 320×320 RGB Chest X-ray"]
+
+    IMG -->|Model 1| CNN["Custom ResNet CNN\nResNet-50 depth · SE channel attention\n4 stages [3,4,6,3] · ~23 M params\ntrained from scratch · Kaiming init"]
+    IMG -->|Model 2| DNN["DenseNet-121\nImageNet pretrained backbone\n2-phase fine-tuning · ~7 M trainable\nfreeze backbone → unfreeze all"]
+
+    CNN --> F1["512-d  ·  Global Avg Pool"]
+    DNN --> F2["1024-d  ·  Global Avg Pool"]
+
+    F1 --> ML1["Multi-label head\n14 × sigmoid  ·  weighted BCE"]
+    F1 --> BN1["Binary head\n1 × sigmoid  ·  BCE"]
+    F2 --> ML2["Multi-label head\n14 × sigmoid  ·  weighted BCE"]
+    F2 --> BN2["Binary head\n1 × sigmoid  ·  BCE"]
+
+    ML1 --- EVAL["Primary metric: macro AUC-ROC\nper-class AUC · F1 · Grad-CAM"]
+    BN1 --- EVAL
+    ML2 --- EVAL
+    BN2 --- EVAL
 ```
-┌─────────────────────────────────────────────────────────┐
-│                       CheXVision                         │
-├──────────────────────────┬──────────────────────────────┤
-│  Model 1: Custom CNN     │  Model 2: DenseNet-121        │
-│  (trained from scratch)  │  (ImageNet → Chest X-ray14)  │
-│  Residual blocks         │  Dense blocks + fine-tuning  │
-│  Kaiming initialization  │  Two-phase: freeze → unfreeze│
-├──────────────────────────┴──────────────────────────────┤
-│                  Shared Data Pipeline                     │
-│   HlexNC/chest-xray-14 (36 parquet shards, ~4.7 GB)     │
-│   224×224 RGB → Augmentation → DataLoader                │
-├─────────────────────────────────────────────────────────┤
-│  Head A — Multi-label:  14-unit sigmoid + weighted BCE   │
-│  Head B — Binary:        1-unit sigmoid + weighted BCE   │
-├─────────────────────────────────────────────────────────┤
-│  Metrics: macro AUC-ROC · per-class AUC · F1 · Precision │
-│  Interpretability: Grad-CAM heatmaps per pathology class │
-└─────────────────────────────────────────────────────────┘
+
+---
+
+## Training Pipeline
+
+```mermaid
+flowchart TD
+    DS[("🗄️ HlexNC/chest-xray-14-320\n112,120 images · 36 shards · ~7.97 GB")]
+    DS -->|snapshot_download| PREP["data/images  ·  data/labels.csv\ntrain 78,468  ·  val 11,210  ·  test 22,442"]
+    PREP --> AUG["Augmentation Pipeline\nHFlip · Rotate±15° · RandomAffine\nColorJitter · GaussianBlur · RandomErasing"]
+    AUG --> FWD["⚡ Model Forward Pass\ntorch.cuda.amp.autocast · fp16"]
+    FWD --> ML["multilabel_logits  B×14\nWeighted BCE + pos_weight · 14 classes"]
+    FWD --> BIN["binary_logits  B×1\nBCE · Normal vs. Abnormal"]
+    ML --> LOSS["Combined Loss\n1.0 × multilabel + 0.5 × binary"]
+    BIN --> LOSS
+    LOSS --> BACK["Backward · Grad Clip 1.0\nGrad Accum ×4 · eff. batch 96"]
+    BACK --> OPT["AdamW · CosineAnnealingLR\nearly stop patience = 15"]
+    OPT -->|best val AUC-ROC| BEST["💾 Best Checkpoint\nmodel_state · best_val_metrics · config"]
+    BEST -->|upload_model_artifacts| HUB["🤗 HF Hub\ncheckpoint · history.json · model card"]
 ```
 
 ---
@@ -74,40 +96,52 @@ We implement and compare two deep learning approaches on two distinct tasks:
 ```
 chexvision/
 ├── .github/workflows/
-│   ├── ci.yml                # Lint (ruff) + test (pytest) + type check (mypy)
-│   └── deploy-space.yml      # Auto-deploy app/ to HF Space on push to main
+│   ├── ci.yml                    # Lint (ruff) + test (pytest) + type check (mypy)
+│   └── deploy-space.yml          # Auto-deploy app/ to HF Space on push to main
 ├── src/
 │   ├── data/
-│   │   ├── dataset.py        # ChestXrayDataset — PyTorch Dataset, label encoding
-│   │   ├── transforms.py     # Train / eval augmentation pipelines
-│   │   └── download.py       # snapshot_download wrapper for HF dataset
+│   │   ├── dataset.py            # ChestXrayDataset — PyTorch Dataset, label encoding
+│   │   ├── transforms.py         # Train / eval augmentation pipelines
+│   │   ├── download.py           # snapshot_download wrapper for HF dataset
+│   │   └── resize_320_pipeline.py  # Kaggle kernel: NIH source → 320px parquet shards
 │   ├── models/
-│   │   ├── scratch_cnn.py    # Model 1: custom residual CNN, dual heads
+│   │   ├── scratch_cnn.py        # Model 1: custom residual CNN + SE, dual heads
 │   │   └── densenet_transfer.py  # Model 2: DenseNet-121 fine-tuning, dual heads
 │   ├── training/
-│   │   ├── trainer.py        # Training loop, YAML config merging, history logging
-│   │   ├── metrics.py        # AUC-ROC, F1, combine_losses
-│   │   └── evaluate.py       # Post-training evaluation and comparison
+│   │   ├── trainer.py            # Training loop, YAML config merging, history logging
+│   │   ├── metrics.py            # AUC-ROC, F1, combine_losses
+│   │   └── evaluate.py           # Post-training evaluation and comparison
 │   └── utils/
-│       ├── hub.py            # HF token resolution, upload_model_artifacts, model card
-│       └── visualization.py  # Grad-CAM, ROC curves, training history plots
+│       ├── hub.py                # HF token resolution, upload_model_artifacts, model card
+│       └── visualization.py      # Grad-CAM, ROC curves, training history plots
 ├── scripts/
-│   ├── eda.py                # EDA — streams metadata from HF, saves plots locally
-│   ├── dispatch.py           # Dispatch Kaggle kernels; build + embed project bundle
-│   └── push_models.py        # Manual model upload to HF Hub (recovery path)
+│   ├── eda.py                    # EDA — streams metadata from HF, saves plots locally
+│   ├── dispatch.py               # Dispatch Kaggle kernels; build + embed project bundle
+│   ├── push_models.py            # Manual model upload to HF Hub (recovery path)
+│   └── generate_diagram_pngs.py  # Render Mermaid diagrams → PNG via Playwright
 ├── kaggle/
-│   ├── train_scratch/        # Kernel: custom CNN (script.py + kernel-metadata.json)
-│   └── train_transfer/       # Kernel: DenseNet-121 (script.py + kernel-metadata.json)
+│   ├── train_scratch/            # Kernel: custom CNN (script.py + kernel-metadata.json)
+│   └── train_transfer/           # Kernel: DenseNet-121 (script.py + kernel-metadata.json)
 ├── configs/
-│   ├── default.yaml          # Base hyperparameters inherited by all configs
-│   ├── scratch.yaml          # Overrides for custom CNN
-│   └── transfer.yaml         # Overrides for DenseNet-121
+│   ├── default.yaml              # Base hyperparameters inherited by all configs
+│   ├── scratch.yaml              # Overrides for custom CNN
+│   └── transfer.yaml             # Overrides for DenseNet-121
 ├── app/
-│   └── app.py                # Streamlit demo — loads models from HF Hub
-├── tests/                    # pytest unit tests (34 tests across 6 modules)
-├── Dockerfile                # HF Spaces deployment (port 7860, non-root user)
-├── requirements.txt          # Runtime deps for Streamlit Cloud / HF Spaces
-└── pyproject.toml            # Build config, dev extras, ruff + pytest settings
+│   └── app.py                    # Streamlit demo — loads models from HF Hub
+├── tests/                        # pytest unit tests (51 tests across 9 modules)
+│   ├── test_dataset.py
+│   ├── test_metrics.py
+│   ├── test_transforms.py
+│   ├── test_models.py
+│   ├── test_hub.py
+│   ├── test_download.py
+│   ├── test_dispatch.py
+│   ├── test_resize_320_pipeline.py
+│   └── test_app_bootstrap.py
+├── SECURITY.md                   # Vulnerability reporting policy
+├── Dockerfile                    # HF Spaces deployment (port 7860, non-root user)
+├── requirements.txt              # Runtime deps for Streamlit Cloud / HF Spaces
+└── pyproject.toml                # Build config, dev extras, ruff + pytest settings
 ```
 
 ---
@@ -158,7 +192,7 @@ python scripts/dispatch.py kaggle output scratch
 
 The kernels automatically:
 1. Install dependencies
-2. Download the pinned dataset snapshot from `HlexNC/chest-xray-14`
+2. Download the pinned dataset snapshot from `HlexNC/chest-xray-14-320`
 3. Train the model and save the best checkpoint by validation AUC-ROC
 4. Upload the checkpoint, training history JSON, config, and model card to HF Hub
 
@@ -187,19 +221,19 @@ python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.
 
 ## Dataset
 
-**NIH Chest X-ray14** — hosted at [`HlexNC/chest-xray-14`](https://huggingface.co/datasets/HlexNC/chest-xray-14)
+**NIH Chest X-ray14** — hosted at [`HlexNC/chest-xray-14-320`](https://huggingface.co/datasets/HlexNC/chest-xray-14-320)
 
 - **112,120** frontal-view chest X-ray images
 - **14 pathology labels**: Atelectasis, Cardiomegaly, Consolidation, Edema, Effusion, Emphysema, Fibrosis, Hernia, Infiltration, Mass, Nodule, Pleural Thickening, Pneumonia, Pneumothorax
 - **Multi-label**: each image may have zero or more conditions
 - **Binary derived label**: "No Finding" → Normal, any condition → Abnormal
-- **Pre-processed**: resized to 224×224 RGB, stored as 36 Parquet shards (~4.7 GB total)
+- **Pre-processed**: resized to 320×320 RGB, stored as 36 Parquet shards (~7.97 GB total)
 
 | Split | Images |
 |-------|--------|
-| Train | ~78,468 (70 %) |
-| Validation | ~11,210 (10 %) |
-| Test | ~22,442 (20 %) |
+| Train | 78,468 (70 %) |
+| Validation | 11,210 (10 %) |
+| Test | 22,442 (20 %) |
 
 ---
 
@@ -207,24 +241,24 @@ python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.
 
 ### Model 1 — Custom CNN (From Scratch)
 
-A ResNet-inspired architecture built without any pretrained weights:
+A ResNet-50-equivalent architecture built without any pretrained weights:
 
-- Residual blocks with skip connections and batch normalization
-- Global average pooling before the classification heads
+- **4 residual stages** with depths `[3, 4, 6, 3]` and widths `[64, 128, 256, 512]`
+- **Squeeze-Excitation (SE) attention** blocks for channel-wise recalibration
 - **Dual heads**: 14-unit sigmoid (multi-label) + 1-unit sigmoid (binary)
-- Kaiming initialization throughout
-- **Loss**: per-label weighted binary cross-entropy
-- **Optimizer**: AdamW + cosine annealing LR schedule
+- Kaiming initialization; global average pooling before classification heads
+- **Loss**: per-label weighted binary cross-entropy (`pos_weight` per class)
+- **Optimizer**: AdamW + cosine annealing LR; batch size 24 + gradient accumulation ×4 = effective batch 96
 
 ### Model 2 — DenseNet-121 Transfer Learning
 
 Following the CheXNet approach (Rajpurkar et al., 2017):
 
 - **Backbone**: DenseNet-121 pretrained on ImageNet
-- **Two-phase fine-tuning**: freeze backbone → train heads; then unfreeze all layers with lower LR
-- **Dual heads** replacing the original classifier
+- **Two-phase fine-tuning**: freeze backbone (epochs 1–5) → full end-to-end fine-tuning (epoch 6+)
+- **Dual heads** replacing the original 1000-class classifier
 - **Loss**: per-label weighted binary cross-entropy (same as Model 1 for a fair comparison)
-- **Optimizer**: AdamW + warm-up + cosine annealing
+- **Optimizer**: AdamW + warm-up + cosine annealing; batch size 24 + gradient accumulation ×4 = effective batch 96
 
 ---
 
@@ -245,7 +279,7 @@ All heavy compute runs in the cloud. Local machines are for editing and lightwei
 | Component | Platform | Notes |
 |-----------|----------|-------|
 | Source code | [GitHub](https://github.com/arudaev/chexvision) | CI on every push (lint, test, type check) |
-| Dataset | [HF Dataset](https://huggingface.co/datasets/HlexNC/chest-xray-14) | 36 Parquet shards, pinned revision |
+| Dataset | [HF Dataset](https://huggingface.co/datasets/HlexNC/chest-xray-14-320) | 36 Parquet shards · 320×320 · pinned revision |
 | Training | [Kaggle kernels](kaggle/) | Free T4 GPU; `dispatch.py` fully automates push |
 | Model (scratch) | [HlexNC/chexvision-scratch](https://huggingface.co/HlexNC/chexvision-scratch) | Auto-uploaded by kernel after training |
 | Model (transfer) | [HlexNC/chexvision-densenet](https://huggingface.co/HlexNC/chexvision-densenet) | Auto-uploaded by kernel after training |
@@ -270,6 +304,12 @@ CI runs all three jobs automatically on every push and pull request.
 
 ---
 
+## Security
+
+To report a vulnerability, please use [GitHub Private Security Advisories](https://github.com/arudaev/chexvision/security/advisories/new). See [SECURITY.md](SECURITY.md) for the full policy.
+
+---
+
 ## Team
 
 **BIG D(ATA)** — Deep Learning & Big Data, AIN program
@@ -282,6 +322,7 @@ CI runs all three jobs automatically on every push and pull request.
 2. Rajpurkar, P. et al. (2017). "CheXNet: Radiologist-Level Pneumonia Detection on Chest X-Rays with Deep Learning." *arXiv:1711.05225*.
 3. Huang, G. et al. (2017). "Densely Connected Convolutional Networks." *CVPR*.
 4. He, K. et al. (2016). "Deep Residual Learning for Image Recognition." *CVPR*.
+5. Hu, J. et al. (2018). "Squeeze-and-Excitation Networks." *CVPR*.
 
 ---
 
