@@ -171,7 +171,7 @@ def _render_pipeline_diagram() -> str:
     """Mermaid flowchart of the full data→train→upload pipeline."""
     return """```mermaid
 flowchart TD
-    DS[("🗄️ HlexNC/chest-xray-14\n112,120 images · 36 shards · ~4.7 GB")]
+    DS[("🗄️ HlexNC/chest-xray-14-320\n112,120 images · 36 shards · ~7.97 GB")]
     DS -->|snapshot_download| PREP["📂 data/images · data/labels.csv\ntrain 78,468 · val 11,210 · test 22,442"]
     PREP --> AUG["Augmentation Pipeline\nHFlip · Rotate±15° · RandomAffine\nColorJitter · GaussianBlur · RandomErasing"]
     AUG --> FWD["⚡ Model Forward Pass\ntorch.cuda.amp.autocast · fp16"]
@@ -179,7 +179,7 @@ flowchart TD
     FWD --> BIN["binary_logits B×1\nBCE · Normal vs. Abnormal"]
     ML --> LOSS["Combined Loss\n1.0 × multilabel + 0.5 × binary"]
     BIN --> LOSS
-    LOSS --> BACK["Backward · Grad Clip 1.0\nGradient Accumulation ×4 · eff. batch 128"]
+    LOSS --> BACK["Backward · Grad Clip 1.0\nGradient Accumulation ×4 · eff. batch 96"]
     BACK --> OPT["AdamW · CosineAnnealingLR\nearly stop patience = 15"]
     OPT -->|"↑ best val AUC-ROC"| BEST["💾 Best Checkpoint\nmodel_state · best_val_metrics · config"]
     BEST -->|upload_model_artifacts| HUB["🤗 HF Hub\ncheckpoint · history.json · model card"]
@@ -196,7 +196,7 @@ def _render_scratch_architecture(config: dict[str, Any]) -> str:
     return f"""```mermaid
 graph LR
     IN["Input
-    3 × 224 × 224"] --> STEM["Stem
+    3 × 320 × 320"] --> STEM["Stem
     7×7 Conv · BN · ReLU
     3→64ch · MaxPool ÷2"]
     STEM --> S1["Stage 1
@@ -231,7 +231,7 @@ def _render_densenet_architecture() -> str:
     return """```mermaid
 graph LR
     IN["Input
-    3 × 224 × 224"] --> BB["DenseNet-121 Backbone
+    3 × 320 × 320"] --> BB["DenseNet-121 Backbone
     ImageNet pretrained
     Dense connectivity
     7.9M parameters"]
