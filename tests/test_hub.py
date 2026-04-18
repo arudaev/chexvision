@@ -75,7 +75,7 @@ def test_render_model_card_includes_dataset_and_metrics() -> None:
         "binary_f1": [0.4, 0.61],
     }
 
-    card = render_model_card("HlexNC/chexvision-densenet", checkpoint, history)
+    card = render_model_card("arudaev/chexvision-densenet", checkpoint, history)
 
     assert HF_DATASET_REPO in card
     assert HF_DATASET_REVISION in card

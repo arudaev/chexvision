@@ -98,7 +98,7 @@ tests/                          # pytest unit tests (51 tests across 9 modules)
 - **History JSON**: trainer saves per-epoch metrics to `{model}_history.json` alongside checkpoints for report figures
 - **`src.utils.hub`**: centralises all HF token resolution, upload logic, and model card rendering — Kaggle scripts import from here
 - **SE attention (scratch model)**: Squeeze-Excitation blocks after each residual stage for channel-wise recalibration — justified in the report as particularly suited to multi-label pathology detection
-- **320×320 training resolution**: dataset `HlexNC/chest-xray-14-320` — higher resolution than the 224px baseline for better small-lesion detection; batch size reduced to 24 (from 32) to stay within T4 VRAM
+- **320×320 training resolution**: dataset `arudaev/chest-xray-14-320` — higher resolution than the 224px baseline for better small-lesion detection; batch size reduced to 24 (from 32) to stay within T4 VRAM
 - **CLAHE preprocessing** (`data.clahe: true`): Contrast Limited Adaptive Histogram Equalisation applied in LAB colour space before the network sees the image; enhances local contrast for low-contrast findings (Nodule, Infiltration, Pneumonia) without global brightness shifts; implemented as `CLAHETransform` in `src/data/transforms.py` with a lazy `cv2` import
 - **Label smoothing** (`training.label_smoothing: 0.1`): regularises against noisy NIH patient-level annotations; positive targets become `1 − ε`, negative targets become `ε / 2`; applied per-batch in `train_one_epoch` before BCE loss, so it is orthogonal to the `pos_weight` class balancing
 - **TTA at inference** (`use_tta=True` in `app.py` and `evaluate.py`): averages sigmoid probabilities over 4 views (original, h-flip, rotate ±7°) — reduces prediction variance with no training cost; implemented in `predict_with_tta()` using `torchvision.transforms.functional` (aliased as `transforms_functional` per ruff N812)
@@ -168,11 +168,11 @@ python scripts/dispatch.py kaggle output scratch  # download output files
 
 | Resource | ID |
 |----------|----|
-| Dataset (320×320) | `HlexNC/chest-xray-14-320` |
-| Model — scratch CNN | `HlexNC/chexvision-scratch` |
-| Model — DenseNet | `HlexNC/chexvision-densenet` |
-| Demo Space (Streamlit) | `HlexNC/chexvision-demo` |
-| Data pipeline Space (one-time) | `HlexNC/chexvision-data-pipeline` |
+| Dataset (320×320) | `arudaev/chest-xray-14-320` |
+| Model — scratch CNN | `arudaev/chexvision-scratch` |
+| Model — DenseNet | `arudaev/chexvision-densenet` |
+| Demo Space (Streamlit) | `arudaev/chexvision-demo` |
+| Data pipeline Space (one-time) | `arudaev/chexvision-data-pipeline` |
 
 The dataset is pinned to a specific commit hash stored in `src/utils/hub.py` (`HF_DATASET_REVISION`). Update this constant when a new dataset version is intentionally published.
 
@@ -188,12 +188,12 @@ from dotenv import load_dotenv; load_dotenv()
 
 | Token | Env var | Scope |
 |-------|---------|-------|
-| HuggingFace | `HF_TOKEN` | Read + write to HlexNC repos |
+| HuggingFace | `HF_TOKEN` | Read + write to arudaev repos |
 | Kaggle | `KAGGLE_API_TOKEN` | Push kernels, read status/output |
 | GitHub | `GITHUB_TOKEN` | CI status, workflow triggers, secrets management |
 
 GitHub repo: `arudaev/chexvision`
-HF owner: `HlexNC`
+HF owner: `arudaev`
 
 ---
 
@@ -215,7 +215,7 @@ No notebooks. No local GPU training. No Colab.
 ## CI/CD
 
 - **`ci.yml`**: runs on every push/PR to `main` — three parallel jobs: Lint (ruff), Test (pytest), Type Check (mypy)
-- **`deploy-space.yml`**: runs on push to `main` — pushes the full repo to `HlexNC/chexvision-demo` HF Space
+- **`deploy-space.yml`**: runs on push to `main` — pushes the full repo to `arudaev/chexvision-demo` HF Space
 
 The HF Space uses `requirements.txt` (not the Dockerfile) on Streamlit Community Cloud. The Dockerfile is kept for completeness and potential future Docker-based HF Spaces deployment.
 
@@ -238,7 +238,7 @@ Key fields:
 - `training.label_smoothing`: `0.1` — positive targets → 0.9, negative targets → 0.05
 - `data.image_size`: `320`
 - `data.clahe`: `true` — CLAHE contrast enhancement in LAB colour space (clip 2.0, tile 8×8)
-- `data.dataset_name`: `"HlexNC/chest-xray-14-320"`
+- `data.dataset_name`: `"arudaev/chest-xray-14-320"`
 - `data.augmentation`: RandomHorizontalFlip, RandomRotation, ColorJitter, RandomErasing
 - `logging.checkpoint_dir`: where to save `.pth` files
 
@@ -246,7 +246,7 @@ Key fields:
 
 ## Important Notes
 
-- The raw NIH dataset is ~45 GB. `HlexNC/chest-xray-14-320` stores pre-resized 320×320 parquet shards (~7.97 GB, 36 shards).
+- The raw NIH dataset is ~45 GB. `arudaev/chest-xray-14-320` stores pre-resized 320×320 parquet shards (~7.97 GB, 36 shards).
 - Always pin `HF_DATASET_REVISION` in `src/utils/hub.py` to a specific commit hash for reproducible training runs.
 - The report must justify every architectural decision — keep code comments explaining *why*, not *what*.
 - Grad-CAM and ROC curve figures for the report are generated by `src/utils/visualization.py`.
