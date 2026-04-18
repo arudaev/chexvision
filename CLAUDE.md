@@ -79,6 +79,7 @@ tests/                        # pytest unit tests (~34 tests, 6 modules)
 - **Reproducibility**: seed `torch`, `numpy`, `random`, and CUDA in every training run
 - **Docstrings**: Google style on public classes/functions only
 - **No notebooks** — all logic lives in `src/` or `scripts/`
+- **No Co-Authored-By** — never add `Co-Authored-By: Claude` trailers to commit messages or PR descriptions
 
 ---
 
