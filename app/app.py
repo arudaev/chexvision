@@ -109,7 +109,7 @@ def load_models() -> dict[str, torch.nn.Module]:
 def predict(model: torch.nn.Module, image: Image.Image) -> dict[str, np.ndarray]:
     """Run inference on a single image."""
     device = next(model.parameters()).device
-    transform = get_eval_transforms(224)
+    transform = get_eval_transforms(320)
     tensor = transform(image).unsqueeze(0).to(device)
 
     with torch.no_grad():

@@ -35,7 +35,7 @@ model:
 
 training:
   epochs: 100                  # Full 9h Kaggle budget; early stopping will cut short if needed
-  batch_size: 32
+  batch_size: 24               # 320px images are ~2× larger than 224px; reduced from 32 to stay within T4 VRAM
   learning_rate: 0.001
   weight_decay: 0.0001
   optimizer: "adamw"
