@@ -6,6 +6,10 @@ seed: 42
 data:
   dataset_name: "HlexNC/chest-xray-14-320"
   image_size: 320
+  # CLAHE: Contrast Limited Adaptive Histogram Equalisation — standard radiology preprocessing.
+  # Enhances local contrast in the L channel (LAB space) before the network sees the image.
+  # Particularly benefits small/low-contrast findings: Nodule, Infiltration, Pneumonia.
+  clahe: true
   num_workers: 4
   pin_memory: true
   train_split: 0.7
@@ -62,6 +66,10 @@ training:
   # Task weights for combined loss
   multilabel_weight: 1.0
   binary_weight: 0.5
+
+  # Label smoothing: regularises against noisy NIH patient-level annotations.
+  # Positive targets → (1 - ε), negative targets → ε/2. Set 0.0 to disable.
+  label_smoothing: 0.1
 
 evaluation:
   primary_metric: "auc_roc_macro"
