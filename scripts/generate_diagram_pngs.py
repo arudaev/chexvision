@@ -333,24 +333,24 @@ DISPLAY_WIDTHS: dict[str, str] = {
 }
 
 
-def _img_html(filename: str, alt: str) -> str:
-    """Centred <img> block with a fixed display width and subtle drop-shadow."""
+def _img_html(filename: str, alt: str, repo_id: str) -> str:
+    """Centred <img> block using an absolute resolve/main URL (relative paths
+    are not resolved by the HF Hub markdown renderer inside HTML tags)."""
     w = DISPLAY_WIDTHS.get(filename, "80%")
+    url = f"https://huggingface.co/{repo_id}/resolve/main/{filename}"
     return (
         f'<p align="center">\n'
-        f'  <img src="{filename}" width="{w}" alt="{alt}"\n'
-        f'       style="border-radius:12px;'
-        f'box-shadow:0 4px 18px rgba(0,0,0,.15)"/>\n'
+        f'  <img src="{url}" width="{w}" alt="{alt}"/>\n'
         f'</p>'
     )
 
 
 def _replace_diagram(content: str, section_heading: str,
-                     img_alt: str, img_filename: str) -> str:
-    """Replace a ```mermaid block OR an existing bare ![](img) with a styled HTML tag."""
-    html_tag = _img_html(img_filename, img_alt)
+                     img_alt: str, img_filename: str, repo_id: str) -> str:
+    """Replace a ```mermaid block OR any existing image reference with a styled HTML tag."""
+    html_tag = _img_html(img_filename, img_alt, repo_id)
 
-    # 1. Try to replace a mermaid code fence under the heading
+    # 1. Mermaid code fence under the heading
     mermaid_pat = (
         r"(" + re.escape(section_heading) + r"\s*\n\s*)"
         r"```mermaid\n.*?```"
@@ -360,17 +360,17 @@ def _replace_diagram(content: str, section_heading: str,
     if n:
         return new_content
 
-    # 2. Replace an existing bare markdown image for this file (from a previous run)
+    # 2. Bare markdown image from a previous run
     md_img_pat = r"!\[[^\]]*\]\(" + re.escape(img_filename) + r"\)"
     new_content, n = re.subn(md_img_pat, html_tag, content)
     if n:
         return new_content
 
-    # 3. Replace an existing <p align="center"><img src="filename"…></p> block
+    # 3. Existing <p align="center"><img src="…filename…"…/></p> block
     html_img_pat = (
-        r'<p align="center">\s*\n\s*<img\s[^>]*src="'
+        r'<p align="center">\s*\n\s*<img\s[^>]*'
         + re.escape(img_filename)
-        + r'"[^>]*/>\s*\n\s*</p>'
+        + r'[^>]*/>\s*\n\s*</p>'
     )
     new_content, n = re.subn(html_img_pat, html_tag, content, flags=re.DOTALL)
     if n:
@@ -389,9 +389,11 @@ def push_to_hf(png_paths: dict[str, Path]) -> None:
     print("\n=== Pushing to HlexNC/chexvision-scratch ===")
     readme = _fetch_readme(HF_SCRATCH_REPO, token)
     readme = _replace_diagram(readme, "## Architecture",
-                               "SE-ResNet Architecture", "arch_scratch.png")
+                               "SE-ResNet Architecture", "arch_scratch.png",
+                               HF_SCRATCH_REPO)
     readme = _replace_diagram(readme, "## Training Pipeline",
-                               "Training Pipeline", "pipeline_training.png")
+                               "Training Pipeline", "pipeline_training.png",
+                               HF_SCRATCH_REPO)
     with tempfile.TemporaryDirectory() as tmp:
         tp = Path(tmp)
         shutil.copy2(png_paths["arch_scratch.png"],      tp / "arch_scratch.png")
@@ -406,11 +408,14 @@ def push_to_hf(png_paths: dict[str, Path]) -> None:
     print("\n=== Pushing to HlexNC/chexvision-densenet ===")
     readme = _fetch_readme(HF_DENSENET_REPO, token)
     readme = _replace_diagram(readme, "## Architecture",
-                               "DenseNet Architecture", "arch_densenet.png")
+                               "DenseNet Architecture", "arch_densenet.png",
+                               HF_DENSENET_REPO)
     readme = _replace_diagram(readme, "## Fine-Tuning Strategy",
-                               "Fine-Tuning Strategy", "finetuning_densenet.png")
+                               "Fine-Tuning Strategy", "finetuning_densenet.png",
+                               HF_DENSENET_REPO)
     readme = _replace_diagram(readme, "## Training Pipeline",
-                               "Training Pipeline", "pipeline_training.png")
+                               "Training Pipeline", "pipeline_training.png",
+                               HF_DENSENET_REPO)
     with tempfile.TemporaryDirectory() as tmp:
         tp = Path(tmp)
         shutil.copy2(png_paths["arch_densenet.png"],       tp / "arch_densenet.png")
