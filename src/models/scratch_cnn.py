@@ -74,7 +74,7 @@ class ResidualBlock(nn.Module):
         self.se = SEBlock(out_channels) if use_se else nn.Identity()
 
         # Skip connection with 1×1 conv if dimensions change
-        self.shortcut = nn.Identity()
+        self.shortcut: nn.Module = nn.Identity()
         if stride != 1 or in_channels != out_channels:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),

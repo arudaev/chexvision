@@ -101,11 +101,15 @@ class ChestXrayDataset(Dataset):
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         # Load image
         img_path = self.image_dir / self.image_paths[idx]
-        image = Image.open(img_path).convert("RGB")
+        pil_image = Image.open(img_path).convert("RGB")
 
-        # Apply transforms
-        if self.transform:
-            image = self.transform(image)
+        # Apply transforms — always required; get_train/eval_transforms() return a Tensor
+        if self.transform is None:
+            raise ValueError(
+                "ChestXrayDataset requires a transform. "
+                "Use get_train_transforms() or get_eval_transforms()."
+            )
+        image: torch.Tensor = self.transform(pil_image)
 
         return {
             "image": image,
