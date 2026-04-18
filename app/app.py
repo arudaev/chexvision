@@ -72,10 +72,10 @@ def load_models() -> dict[str, torch.nn.Module]:
         # not hardcoded defaults — so v1 and v2 checkpoints both load correctly.
         arch = ckpt.get("config", {}).get("model", {}).get("architecture", {})
         model = CheXVisionScratch(
-            block_config=tuple(arch.get("block_config", [3, 4, 6, 3])),
+            block_config=tuple(arch.get("block_config", [2, 2, 2, 2])),
             filter_sizes=tuple(arch.get("filter_sizes", [64, 128, 256, 512])),
             dropout=arch.get("dropout", 0.5),
-            use_se=arch.get("use_se", True),
+            use_se=arch.get("use_se", False),  # False: old checkpoints predate SE blocks
         )
         model.load_state_dict(ckpt["model_state_dict"])
         model.to(device).eval()
