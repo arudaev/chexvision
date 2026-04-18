@@ -30,8 +30,8 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 sys.path.insert(0, str(PROJECT_ROOT))
 
-HF_SCRATCH_REPO  = "HlexNC/chexvision-scratch"
-HF_DENSENET_REPO = "HlexNC/chexvision-densenet"
+HF_SCRATCH_REPO  = "arudaev/chexvision-scratch"
+HF_DENSENET_REPO = "arudaev/chexvision-densenet"
 
 # Default v2 configs used to populate architecture-specific diagrams
 SCRATCH_CONFIG = {
@@ -384,7 +384,7 @@ def push_to_hf(png_paths: dict[str, Path]) -> None:
     api = HfApi(token=token)
 
     # ── scratch ──────────────────────────────────────────────────────────────
-    print("\n=== Pushing to HlexNC/chexvision-scratch ===")
+    print("\n=== Pushing to arudaev/chexvision-scratch ===")
     readme = _fetch_readme(HF_SCRATCH_REPO, token)
     readme = _replace_diagram(readme, "## Architecture",
                                "SE-ResNet Architecture", "arch_scratch.png",
@@ -403,7 +403,7 @@ def push_to_hf(png_paths: dict[str, Path]) -> None:
     print(f"  OK  {HF_SCRATCH_REPO}")
 
     # ── densenet ─────────────────────────────────────────────────────────────
-    print("\n=== Pushing to HlexNC/chexvision-densenet ===")
+    print("\n=== Pushing to arudaev/chexvision-densenet ===")
     readme = _fetch_readme(HF_DENSENET_REPO, token)
     readme = _replace_diagram(readme, "## Architecture",
                                "DenseNet Architecture", "arch_densenet.png",

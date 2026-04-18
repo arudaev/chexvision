@@ -25,5 +25,5 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add hf https://HlexNC:${HF_TOKEN}@huggingface.co/spaces/HlexNC/chexvision-demo || true
+          git remote add hf https://arudaev:${HF_TOKEN}@huggingface.co/spaces/arudaev/chexvision-demo || true
           git push hf main --force
