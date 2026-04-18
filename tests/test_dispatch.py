@@ -34,10 +34,44 @@ def test_build_kaggle_bundle_contains_project_sources() -> None:
         shutil.rmtree(bundle_dir, ignore_errors=True)
 
 
-def test_render_kernel_metadata_forces_training_runtime_flags(monkeypatch, tmp_path: Path) -> None:
-    """Dispatch should force internet and GPU on for pushed training kernels."""
+def test_render_kernel_metadata_preserves_training_gpu_and_forces_internet(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Training kernels should keep GPU enabled and always force internet on."""
     project_root = tmp_path / "repo"
     kernel_dir = project_root / "kaggle" / "train_scratch"
+    kernel_dir.mkdir(parents=True)
+    metadata_path = kernel_dir / "kernel-metadata.json"
+    metadata_path.write_text(
+        json.dumps(
+            {
+                "id": "someone/old-slug",
+                "title": "Temp Kernel",
+                "code_file": "old.py",
+                "language": "python",
+                "kernel_type": "script",
+                "enable_gpu": True,
+                "enable_internet": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(dispatch, "PROJECT_ROOT", project_root)
+    monkeypatch.setitem(dispatch.KERNEL_DIRS, "scratch", Path("kaggle/train_scratch"))
+
+    metadata = dispatch._render_kernel_metadata("scratch")
+
+    assert metadata["id"] == dispatch.KERNEL_SLUGS["scratch"]
+    assert metadata["enable_gpu"] is True
+    assert metadata["enable_internet"] is True
+    assert metadata["code_file"] == "script.py"
+
+
+def test_render_kernel_metadata_keeps_cpu_only_resize_kernel(monkeypatch, tmp_path: Path) -> None:
+    """CPU-only kernels should stay CPU-only while still forcing internet on."""
+    project_root = tmp_path / "repo"
+    kernel_dir = project_root / "kaggle" / "resize_320"
     kernel_dir.mkdir(parents=True)
     metadata_path = kernel_dir / "kernel-metadata.json"
     metadata_path.write_text(
@@ -56,12 +90,12 @@ def test_render_kernel_metadata_forces_training_runtime_flags(monkeypatch, tmp_p
     )
 
     monkeypatch.setattr(dispatch, "PROJECT_ROOT", project_root)
-    monkeypatch.setitem(dispatch.KERNEL_DIRS, "scratch", Path("kaggle/train_scratch"))
+    monkeypatch.setitem(dispatch.KERNEL_DIRS, "resize_320", Path("kaggle/resize_320"))
 
-    metadata = dispatch._render_kernel_metadata("scratch")
+    metadata = dispatch._render_kernel_metadata("resize_320")
 
-    assert metadata["id"] == dispatch.KERNEL_SLUGS["scratch"]
-    assert metadata["enable_gpu"] is True
+    assert metadata["id"] == dispatch.KERNEL_SLUGS["resize_320"]
+    assert metadata["enable_gpu"] is False
     assert metadata["enable_internet"] is True
     assert metadata["code_file"] == "script.py"
 
