@@ -5,6 +5,8 @@ Upload a chest X-ray and get pathology predictions from both models.
 
 from __future__ import annotations
 
+import base64
+import io
 import logging
 import sys
 from pathlib import Path
@@ -15,11 +17,14 @@ import torch
 from huggingface_hub import hf_hub_download
 from PIL import Image
 
-# Hugging Face Streamlit Spaces launch `app/app.py` directly, which puts the
-# `app/` directory on sys.path instead of the repository root.
+APP_DIR = Path(__file__).resolve().parent
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+from sample_cases import SAMPLE_CASES  # noqa: E402
 
 from src.data.dataset import PATHOLOGY_LABELS  # noqa: E402
 from src.data.transforms import get_eval_transforms  # noqa: E402
@@ -116,6 +121,60 @@ def predict(model: torch.nn.Module, image: Image.Image) -> dict[str, np.ndarray]
     return {"multilabel_probs": ml_probs, "binary_prob": float(bin_prob)}
 
 
+@st.cache_data(show_spinner=False)
+def decode_sample_image(preview_png_b64: str) -> bytes:
+    """Decode an embedded sample preview into PNG bytes."""
+    return base64.b64decode(preview_png_b64)
+
+
+def load_sample_image(sample: dict[str, str]) -> Image.Image:
+    """Load one embedded sample preview as a PIL image."""
+    image_bytes = decode_sample_image(sample["preview_png_b64"])
+    return Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+
+def get_sample_case(sample_key: str | None) -> dict[str, str] | None:
+    """Resolve one embedded sample-image definition by key."""
+    if not sample_key:
+        return None
+
+    for sample in SAMPLE_CASES:
+        if sample["key"] == sample_key:
+            return sample
+    return None
+
+
+def render_sidebar_samples() -> dict[str, str] | None:
+    """Render preview thumbnails for embedded sample X-rays."""
+    st.sidebar.subheader("Sample X-rays")
+    st.sidebar.caption(
+        "Preview a few NIH examples, copy the filenames, or load one directly into the demo."
+    )
+
+    selected_sample = None
+    for sample in SAMPLE_CASES:
+        preview_image = load_sample_image(sample)
+        st.sidebar.image(
+            preview_image,
+            caption=f"{sample['title']} - {sample['filename']}",
+            use_container_width=True,
+        )
+        st.sidebar.caption(
+            f"Expected: {sample['expected_labels']}  |  {sample['note']}"
+        )
+        st.sidebar.code(sample["filename"], language=None)
+        if st.sidebar.button(
+            f"Use {sample['title']}",
+            key=f"use_sample_{sample['key']}",
+            use_container_width=True,
+        ):
+            st.session_state["selected_sample_key"] = sample["key"]
+            selected_sample = sample
+        st.sidebar.divider()
+
+    return selected_sample
+
+
 def main() -> None:
     st.set_page_config(page_title="CheXVision", page_icon="\U0001fac1", layout="wide")
 
@@ -137,6 +196,7 @@ def main() -> None:
     [GitHub](https://github.com/arudaev/chexvision) |
     [Dataset](https://huggingface.co/datasets/HlexNC/chest-xray-14)
     """)
+    sidebar_selected_sample = render_sidebar_samples()
 
     models = load_models()
 
@@ -153,14 +213,32 @@ def main() -> None:
         return
 
     uploaded_file = st.file_uploader("Upload a chest X-ray image", type=["png", "jpg", "jpeg"])
+    selected_sample = sidebar_selected_sample or get_sample_case(
+        st.session_state.get("selected_sample_key")
+    )
 
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file).convert("RGB")
+    if uploaded_file is not None or selected_sample is not None:
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file).convert("RGB")
+            image_caption = "Uploaded X-ray"
+            image_note = None
+        else:
+            image = load_sample_image(selected_sample)
+            image_caption = (
+                f"Sample X-ray - {selected_sample['title']} "
+                f"({selected_sample['filename']})"
+            )
+            image_note = (
+                f"Expected label(s): {selected_sample['expected_labels']}  |  "
+                f"{selected_sample['note']}"
+            )
 
         col1, col2 = st.columns([1, 2])
 
         with col1:
-            st.image(image, caption="Uploaded X-ray", use_container_width=True)
+            st.image(image, caption=image_caption, use_container_width=True)
+            if image_note:
+                st.caption(image_note)
 
         with col2:
             for model_name, model in models.items():
