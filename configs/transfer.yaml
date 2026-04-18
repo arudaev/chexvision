@@ -44,7 +44,7 @@ model:
 
 training:
   epochs: 60                   # More budget: target >0.86 AUC with longer fine-tuning
-  batch_size: 32
+  batch_size: 24               # 320px images are ~2× larger than 224px; reduced from 32 to stay within T4 VRAM
   learning_rate: 0.0001
   weight_decay: 0.0001
   optimizer: "adamw"

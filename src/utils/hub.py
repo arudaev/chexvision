@@ -10,10 +10,10 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-HF_DATASET_REPO = "HlexNC/chest-xray-14"
+HF_DATASET_REPO = "HlexNC/chest-xray-14-320"
 HF_DATASET_REVISION = os.environ.get(
     "CHEXVISION_DATASET_REVISION",
-    "c4e9a86b38de3b1604afa6e9f514d156eb9d20bf",
+    "44443e6ee968b3c6094b63f14a27698c40b50680",
 )
 
 # NIH Chest X-ray14 pathology labels in canonical order
