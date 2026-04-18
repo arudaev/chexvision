@@ -25,5 +25,28 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          # Prepend HF Spaces frontmatter to README before pushing.
+          # The GitHub README intentionally omits this block (it renders as a table);
+          # the Space needs it to know the SDK, Python version, and entry point.
+          cat > /tmp/hf_frontmatter.md << 'FRONTMATTER'
+          ---
+          title: CheXVision
+          emoji: 🫁
+          colorFrom: blue
+          colorTo: red
+          sdk: streamlit
+          sdk_version: 1.56.0
+          app_file: app/app.py
+          pinned: true
+          python_version: "3.10"
+          ---
+          FRONTMATTER
+
+          # Strip leading spaces from the heredoc
+          sed -i 's/^          //' /tmp/hf_frontmatter.md
+
+          cat /tmp/hf_frontmatter.md README.md > /tmp/README_hf.md
+          cp /tmp/README_hf.md README.md
+
           git remote add hf https://arudaev:${HF_TOKEN}@huggingface.co/spaces/arudaev/chexvision-demo || true
           git push hf main --force
