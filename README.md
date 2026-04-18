@@ -77,7 +77,7 @@ flowchart TB
 flowchart TD
     DS[("🗄️ HlexNC/chest-xray-14-320\n112,120 images · 36 shards · ~7.97 GB")]
     DS -->|snapshot_download| PREP["data/images  ·  data/labels.csv\ntrain 78,468  ·  val 11,210  ·  test 22,442"]
-    PREP --> AUG["Augmentation Pipeline\nHFlip · Rotate±15° · RandomAffine\nColorJitter · GaussianBlur · RandomErasing"]
+    PREP --> AUG["Augmentation Pipeline\nCLAHE (LAB space) · HFlip · Rotate±15°\nRandomAffine · ColorJitter · RandomErasing"]
     AUG --> FWD["⚡ Model Forward Pass\ntorch.cuda.amp.autocast · fp16"]
     FWD --> ML["multilabel_logits  B×14\nWeighted BCE + pos_weight · 14 classes"]
     FWD --> BIN["binary_logits  B×1\nBCE · Normal vs. Abnormal"]
@@ -239,6 +239,13 @@ python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.
 
 ## Models
 
+### Preprocessing & Training Improvements
+
+Both models share the same input pipeline and training regularisation:
+
+- **CLAHE** (Contrast Limited Adaptive Histogram Equalisation): applied in LAB colour space before any augmentation — enhances local contrast for low-contrast findings (Nodule, Infiltration, Pneumonia) without global brightness shifts
+- **Label smoothing** (ε = 0.1): positive targets → 0.9, negative targets → 0.05 — regularises against noisy NIH patient-level labels
+
 ### Model 1 — Custom CNN (From Scratch)
 
 A ResNet-50-equivalent architecture built without any pretrained weights:
@@ -268,6 +275,8 @@ Following the CheXNet approach (Rajpurkar et al., 2017):
 - Per-class AUC-ROC, F1, precision, recall
 - Binary AUC-ROC and F1 for the normal/abnormal task
 - Confusion matrices (binary task)
+- **Test-Time Augmentation (TTA)**: averages predictions over 4 views (original, h-flip, rotate ±7°) — reduces variance with zero training cost
+- **Ensemble**: averages TTA probabilities from both models — the two architectures fail on different examples, so combining them consistently improves macro AUC
 - Grad-CAM heatmaps for qualitative interpretability
 
 ---
