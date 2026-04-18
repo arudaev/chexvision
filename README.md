@@ -128,7 +128,7 @@ chexvision/
 │   └── test_app_bootstrap.py
 ├── SECURITY.md                   # Vulnerability reporting policy
 ├── Dockerfile                    # HF Spaces deployment (port 7860, non-root user)
-├── requirements.txt              # Runtime deps for Streamlit Cloud / HF Spaces
+├── requirements.txt              # Runtime deps for HF Spaces deployment
 └── pyproject.toml                # Build config, dev extras, ruff + pytest settings
 ```
 
