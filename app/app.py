@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 # HF Hub model repos
 HF_SCRATCH_REPO = "arudaev/chexvision-scratch"
 HF_DENSENET_REPO = "arudaev/chexvision-densenet"
+PRESENTATION_DECK_URL = "https://arudaev.github.io/chexvision/"
 
 
 def _try_load_checkpoint(
@@ -218,7 +219,7 @@ def main() -> None:
     st.markdown("**Large-Scale Chest X-Ray Pathology Detection** — Upload a chest X-ray for AI-powered analysis.")
 
     st.sidebar.header("About")
-    st.sidebar.markdown("""
+    st.sidebar.markdown(f"""
     **Dataset**: NIH Chest X-ray14 (112,120 images)
 
     **Two Models**:
@@ -229,8 +230,9 @@ def main() -> None:
     - Multi-label: 14 pathologies
     - Binary: Normal vs Abnormal
 
+    [Presentation Deck]({PRESENTATION_DECK_URL}) |
     [GitHub](https://github.com/arudaev/chexvision) |
-    [Dataset](https://huggingface.co/datasets/arudaev/chest-xray-14)
+    [Dataset](https://huggingface.co/datasets/arudaev/chest-xray-14-320)
     """)
     sidebar_selected_sample = render_sidebar_samples()
 
