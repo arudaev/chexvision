@@ -32,9 +32,7 @@ jobs:
         shell: bash
         run: |
           test -f docs/index.html
-          if [ ! -f "docs/CheXVision Deck.html" ]; then
-            echo "::notice title=Deck placeholder::docs/CheXVision Deck.html is not present yet; deploying the ready page."
-          fi
+          test -f docs/deck-stage.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
