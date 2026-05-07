@@ -1,96 +1,1422 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CheXVision Deck</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #f7f7f4;
-        --text: #1f2328;
-        --muted: #5f6b73;
-        --accent: #0f766e;
-        --panel: #ffffff;
-        --border: #d9dee3;
-      }
+<head>
+<meta charset="utf-8">
+<title>CheXVision — Final Presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="deck-stage.js"></script>
+<style>
+  :root {
+    --bg: oklch(0.96 0.008 240);
+    --panel: oklch(1 0 0);
+    --panel-2: oklch(0.98 0.004 240);
+    --ink: oklch(0.19 0.012 250);
+    --ink-soft: oklch(0.36 0.014 250);
+    --muted: oklch(0.55 0.012 250);
+    --rule: oklch(0.86 0.008 250);
+    --rule-soft: oklch(0.92 0.006 250);
+    --blue: oklch(0.55 0.15 245);
+    --blue-soft: oklch(0.93 0.04 245);
+    --coral: oklch(0.62 0.15 30);
+    --coral-soft: oklch(0.94 0.04 40);
+    --ok: oklch(0.55 0.13 155);
+  }
+  html, body { margin: 0; background: #0b0d10; }
+  deck-stage { background: #0b0d10; }
+  deck-stage > section {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Slide scaffold */
+  .slide-pad { padding: 72px 96px 88px; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase;
+    border-bottom: 1px solid var(--rule); padding-bottom: 14px; margin-bottom: 44px;
+  }
+  .topbar .brand { color: var(--ink); font-weight: 600; display: inline-flex; align-items: center; gap: 10px; }
+  .topbar .brand::before {
+    content: "🩻";
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    font-size: 18px;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .topbar .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-h, var(--blue)); margin-right: 10px; transform: translateY(-1px); }
+  .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--coral); margin-bottom: 18px; }
+  h1.slide-title { font-size: 62px; line-height: 1.05; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 18px; max-width: 1500px; }
+  h2.slide-title { font-size: 52px; line-height: 1.08; font-weight: 700; letter-spacing: -0.022em; margin: 0 0 14px; }
+  p.lede { font-size: 26px; line-height: 1.4; color: var(--ink-soft); max-width: 1400px; margin: 0 0 24px; font-weight: 400; }
+  .body { font-size: 22px; line-height: 1.5; color: var(--ink-soft); }
 
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #151719;
-          --text: #eef2f4;
-          --muted: #a8b2b9;
-          --accent: #67e8d3;
-          --panel: #1f2428;
-          --border: #384149;
+  /* Dark / section-header slide */
+  .ink { background: oklch(0.16 0.014 250) !important; color: oklch(0.96 0.006 85); }
+  .ink .topbar { color: oklch(0.65 0.012 250); border-color: oklch(0.26 0.014 250); }
+  .ink .topbar .brand { color: oklch(0.96 0.006 85); }
+  .ink .eyebrow { color: oklch(0.78 0.13 60); }
+  .ink .section-accent-rule { display: block; width: 48px; height: 3px; background: var(--accent-h, var(--blue)); border-radius: 2px; margin-bottom: 28px; }
+
+  /* Utility */
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .rule { height: 1px; background: var(--rule); }
+  .grid { display: grid; gap: 32px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--rule); border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ink-soft); letter-spacing: 0.04em; }
+  .kv { display: flex; flex-direction: column; gap: 4px; }
+  .kv .k { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .kv .v { font-size: 22px; font-weight: 500; color: var(--ink); }
+  .kv .v.big { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; }
+
+  .stat-card { background: var(--panel); border: 1px solid var(--rule); border-radius: 18px; padding: 28px 30px; }
+  .stat-card .k { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px;}
+  .stat-card .n { font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; color: var(--ink); font-family: 'JetBrains Mono', monospace; }
+  .stat-card .s { font-size: 18px; color: var(--ink-soft); margin-top: 10px; line-height: 1.4; }
+  .stat-card.accent { background: var(--coral-soft); border-color: oklch(0.85 0.06 40); }
+  .stat-card.cool { background: var(--blue-soft); border-color: oklch(0.84 0.06 245); }
+
+  /* Bullets */
+  ul.list { margin: 0; padding: 0; list-style: none; }
+  ul.list li { position: relative; padding-left: 28px; font-size: 22px; line-height: 1.5; color: var(--ink-soft); margin-bottom: 14px; }
+  ul.list li::before { content: ""; position: absolute; left: 0; top: 14px; width: 14px; height: 1px; background: var(--coral); }
+  ul.list li strong { color: var(--ink); font-weight: 600; }
+
+  /* Tables */
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 19px; }
+  table.cmp th, table.cmp td { text-align: left; padding: 14px 16px; vertical-align: top; }
+  table.cmp thead th { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--rule); }
+  table.cmp tbody tr { border-bottom: 1px solid var(--rule-soft); }
+  table.cmp tbody tr:last-child { border-bottom: 0; }
+  table.cmp td.row-label { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+  table.cmp td strong { color: var(--ink); font-weight: 600; }
+
+  /* Section header slides */
+  .section-number { font-family: 'JetBrains Mono', monospace; font-size: 22px; color: oklch(0.78 0.13 60); letter-spacing: 0.2em; }
+  .section-title { font-size: 128px; font-weight: 700; letter-spacing: -0.035em; line-height: 1; margin: 28px 0 24px; }
+  .section-desc { font-size: 28px; color: oklch(0.78 0.01 250); max-width: 1300px; line-height: 1.4; font-weight: 300; }
+
+  /* Title slide */
+  .title-slide { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+  .hero-logo {
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: 0 18px 42px rgba(31, 35, 40, 0.08);
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    font-size: 58px;
+    line-height: 1;
+  }
+  .title-hero { font-size: 168px; font-weight: 800; letter-spacing: -0.04em; line-height: 0.92; }
+  .title-hero .accent { color: var(--accent-h, var(--blue)); }
+  .title-sub { font-size: 28px; color: var(--ink-soft); line-height: 1.35; max-width: 1400px; margin-top: 28px; font-weight: 400; }
+  .title-meta { display: flex; gap: 56px; align-items: flex-end; justify-content: space-between; }
+  .title-meta .col { display: flex; flex-direction: column; gap: 6px; }
+  .title-meta .k { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; }
+  .title-meta .v { font-size: 20px; color: var(--ink); }
+
+  /* Footer */
+  .foot { position: absolute; left: 96px; right: 96px; bottom: 36px; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .ink .foot { color: oklch(0.65 0.012 250); }
+
+  /* Image frames */
+  .figure { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 22px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .figure img { max-width: 100%; max-height: 100%; display: block; }
+  .figure-caption { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-top: 10px; }
+
+  /* Chart axis text */
+  .chart-axis { font-family: 'JetBrains Mono', monospace; font-size: 12px; fill: var(--muted); }
+  .chart-grid { stroke: var(--rule-soft); stroke-width: 1; }
+  .chart-label { font-family: 'Inter', sans-serif; font-size: 14px; fill: var(--ink); font-weight: 500; }
+
+  /* Per-class bars */
+  .bar-row { display: grid; grid-template-columns: 220px 1fr 90px; align-items: center; gap: 18px; padding: 10px 0; border-bottom: 1px dashed var(--rule-soft); }
+  .bar-row:last-child { border-bottom: 0; }
+  .bar-row .name { font-size: 18px; color: var(--ink); font-weight: 500; }
+  .bar-row .track { position: relative; height: 10px; background: var(--rule-soft); border-radius: 4px; overflow: hidden; }
+  .bar-row .fill { position: absolute; top: 0; left: 0; bottom: 0; background: var(--blue); border-radius: 4px; }
+  .bar-row .val { font-family: 'JetBrains Mono', monospace; font-size: 16px; color: var(--ink); text-align: right; font-weight: 500; }
+  .bar-row.top .fill { background: var(--coral); }
+
+  /* Placeholder stripe */
+  .placeholder {
+    background: repeating-linear-gradient(135deg, oklch(0.91 0.010 240) 0 12px, oklch(0.94 0.008 240) 12px 24px);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  .badge-list { display: flex; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+
+<deck-stage width="1920" height="1080">
+
+  <!-- 1. TITLE -->
+  <section data-label="Title">
+    <div class="slide-pad title-slide">
+      <div class="topbar">
+        <span class="brand">CheXVision · Final Presentation</span>
+        <span>Deep Learning &amp; Big Data · 2026</span>
+      </div>
+
+      <div>
+        <div class="hero-logo" aria-label="X-ray logo">🩻</div>
+        <div class="eyebrow">Large-Scale Chest X-Ray Pathology Detection</div>
+        <div class="title-hero">CheX<span class="accent">Vision</span>.</div>
+        <div class="title-sub">Comparing a custom SE-ResNet trained from scratch against a DenseNet-121 transfer-learning pipeline on 112,120 NIH chest X-rays — under identical evaluation conditions.</div>
+      </div>
+
+      <div class="title-meta">
+        <div class="col">
+          <span class="k">Team</span>
+          <span class="v">BIG D(ATA) — AIN Program</span>
+        </div>
+        <div class="col">
+          <span class="k">Dataset</span>
+          <span class="v">NIH Chest X-ray14 · 112,120 images</span>
+        </div>
+        <div class="col">
+          <span class="k">Tasks</span>
+          <span class="v">14-label pathology · Binary Normal/Abnormal</span>
+        </div>
+        <div class="col">
+          <span class="k">Code</span>
+          <span class="v">github.com/arudaev/chexvision</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. THE PROBLEM -->
+  <section data-label="Problem">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>01 · Motivation</span></div>
+      <div class="eyebrow">The Problem</div>
+      <h1 class="slide-title">Radiologists read billions of chest X-rays a year.<br/>The bottleneck is attention, not imaging.</h1>
+      <p class="lede">Chest radiography is the most common medical imaging procedure worldwide. Getting reliable, low-cost triage to every patient — especially in under-served regions — is a true ML-for-healthcare problem.</p>
+
+      <div class="grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 36px;">
+        <div class="stat-card">
+          <div class="k">Scale</div>
+          <div class="n">2B+</div>
+          <div class="s">Chest X-rays acquired globally each year.</div>
+        </div>
+        <div class="stat-card">
+          <div class="k">Coverage gap</div>
+          <div class="n">2/3</div>
+          <div class="s">Of the world's population lacks timely access to radiology.</div>
+        </div>
+        <div class="stat-card accent">
+          <div class="k">The ask</div>
+          <div class="n">14</div>
+          <div class="s">Pathologies to be detected simultaneously from a single frontal view.</div>
+        </div>
+      </div>
+
+      <div class="foot"><span>01 / 19</span><span>Motivation</span></div>
+    </div>
+  </section>
+
+  <!-- 3. DATASET -->
+  <section data-label="Dataset">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>02 · Dataset</span></div>
+      <div class="eyebrow">NIH Chest X-ray14</div>
+      <h2 class="slide-title">A genuine big-data benchmark — 112,120 frontal X-rays, 14 weak labels.</h2>
+
+      <div class="grid" style="grid-template-columns: 1.25fr 1fr; gap: 56px; margin-top: 32px;">
+        <div>
+          <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
+            <div class="stat-card"><div class="k">Images</div><div class="n">112,120</div><div class="s">Frontal-view chest X-rays · 1,024² source, resized to 320².</div></div>
+            <div class="stat-card"><div class="k">Shards</div><div class="n">36</div><div class="s">Parquet shards on HF Hub · ~7.97 GB total.</div></div>
+            <div class="stat-card"><div class="k">Labels</div><div class="n">14</div><div class="s">Patient-level, noisy — extracted from reports by NLP.</div></div>
+          </div>
+
+          <div style="margin-top: 36px;">
+            <div class="kv" style="margin-bottom: 18px;"><div class="k">Split</div></div>
+            <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 16px;">
+              <div class="stat-card cool"><div class="k">Train</div><div class="n" style="font-size: 40px;">78,468</div><div class="s">70%</div></div>
+              <div class="stat-card cool"><div class="k">Validation</div><div class="n" style="font-size: 40px;">11,210</div><div class="s">10%</div></div>
+              <div class="stat-card cool"><div class="k">Test</div><div class="n" style="font-size: 40px;">22,442</div><div class="s">20%</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="kv" style="margin-bottom: 14px;"><div class="k">14 Pathology Classes</div></div>
+          <div class="badge-list">
+            <span class="pill">Atelectasis</span><span class="pill">Cardiomegaly</span>
+            <span class="pill">Effusion</span><span class="pill">Infiltration</span>
+            <span class="pill">Mass</span><span class="pill">Nodule</span>
+            <span class="pill">Pneumonia</span><span class="pill">Pneumothorax</span>
+            <span class="pill">Consolidation</span><span class="pill">Edema</span>
+            <span class="pill">Emphysema</span><span class="pill">Fibrosis</span>
+            <span class="pill">Pleural Thickening</span><span class="pill">Hernia</span>
+          </div>
+
+          <div style="margin-top: 28px;" class="kv"><div class="k">Two derived tasks</div></div>
+          <ul class="list" style="margin-top: 12px;">
+            <li><strong>Multi-label</strong> — an image may carry zero, one, or several conditions simultaneously.</li>
+            <li><strong>Binary</strong> — "No Finding" ↦ Normal, any label ↦ Abnormal (fast triage head).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot"><span>02 / 19</span><span>NIH Chest X-ray14</span></div>
+    </div>
+  </section>
+
+  <!-- 4. TASK FRAMING -->
+  <section data-label="Dual-task framing">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>03 · Framing</span></div>
+      <div class="eyebrow">Dual-Task Architecture</div>
+      <h2 class="slide-title">One forward pass, two clinically-aligned predictions.</h2>
+      <p class="lede">A shared feature extractor feeds two heads — a fast triage decision and a detailed pathology profile. Trained jointly with a combined loss so both objectives shape the representation.</p>
+
+      <svg viewBox="0 0 1700 380" style="width:100%; height:380px; margin-top: 18px;" aria-label="Dual-head architecture diagram">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f3340"/>
+          </marker>
+        </defs>
+        <!-- Input -->
+        <rect x="30" y="150" width="260" height="90" rx="12" fill="#ffffff" stroke="oklch(0.86 0.008 250)"/>
+        <text x="160" y="185" text-anchor="middle" font-family="Inter" font-size="20" font-weight="600" fill="#1a1d24">Input</text>
+        <text x="160" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="15" fill="#5b6072">3 × 320 × 320 RGB</text>
+
+        <!-- Arrow -->
+        <line x1="300" y1="195" x2="380" y2="195" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
+
+        <!-- Backbone -->
+        <rect x="390" y="110" width="380" height="170" rx="12" fill="oklch(0.93 0.04 245)" stroke="oklch(0.62 0.12 245)"/>
+        <text x="580" y="150" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#14213d">Shared Backbone</text>
+        <text x="580" y="185" text-anchor="middle" font-family="Inter" font-size="17" fill="#14213d">SE-ResNet or DenseNet-121</text>
+        <text x="580" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#14213d">Conv layers → Global Avg Pool</text>
+        <text x="580" y="245" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#14213d">512-dim feature vector</text>
+
+        <!-- Arrow to heads -->
+        <line x1="780" y1="160" x2="860" y2="100" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="780" y1="230" x2="860" y2="290" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
+
+        <!-- Multi-label head -->
+        <rect x="870" y="50" width="420" height="120" rx="12" fill="oklch(0.94 0.04 40)" stroke="oklch(0.72 0.12 30)"/>
+        <text x="1080" y="92" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#3a1108">Multi-Label Head</text>
+        <text x="1080" y="122" text-anchor="middle" font-family="Inter" font-size="16" fill="#3a1108">Linear 512 → 14 · sigmoid</text>
+        <text x="1080" y="148" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#3a1108">Weighted BCE · 14 pathologies</text>
+
+        <!-- Binary head -->
+        <rect x="870" y="220" width="420" height="120" rx="12" fill="oklch(0.94 0.06 155)" stroke="oklch(0.65 0.13 155)"/>
+        <text x="1080" y="262" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#0a2e1b">Binary Head</text>
+        <text x="1080" y="292" text-anchor="middle" font-family="Inter" font-size="16" fill="#0a2e1b">Linear 512 → 1 · sigmoid</text>
+        <text x="1080" y="318" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#0a2e1b">BCE · Normal vs. Abnormal</text>
+
+        <!-- Loss -->
+        <line x1="1290" y1="110" x2="1420" y2="175" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="1290" y1="280" x2="1420" y2="215" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
+        <rect x="1420" y="150" width="250" height="90" rx="12" fill="oklch(0.19 0.012 250)"/>
+        <text x="1545" y="185" text-anchor="middle" font-family="Inter" font-size="20" font-weight="700" fill="#f5f5f2">Combined Loss</text>
+        <text x="1545" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="oklch(0.78 0.13 60)">1.0 · ℒ_ml + 0.5 · ℒ_bin</text>
+      </svg>
+
+      <div class="foot"><span>03 / 19</span><span>Shared backbone · Two heads</span></div>
+    </div>
+  </section>
+
+  <!-- 5. SECTION DIVIDER — APPROACH -->
+  <section data-label="Section — Approach" class="ink">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>Section 1 · Approach</span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <span class="section-accent-rule"></span>
+        <div class="section-number">— PART 01</div>
+        <div class="section-title">Approach.</div>
+        <div class="section-desc">Two architectures, one data pipeline, one evaluation protocol. A custom SE-ResNet trained from scratch vs. DenseNet-121 transferred from ImageNet — a fair, head-to-head comparison under identical conditions.</div>
+      </div>
+      <div class="foot"><span>04 / 19</span><span>Approach</span></div>
+    </div>
+  </section>
+
+  <!-- 6. MODEL 1 — SE-RESNET -->
+  <section data-label="Model 1 — SE-ResNet">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>04 · Model 1</span></div>
+      <div class="eyebrow">Model 1 · Built from scratch</div>
+      <h2 class="slide-title">Custom SE-ResNet · depth [3, 4, 6, 3] · Kaiming init · no pretraining.</h2>
+
+      <div class="grid" style="grid-template-columns: 1fr 360px; gap: 40px; margin-top: 20px; flex: 1;">
+        <div class="figure" style="min-height: 460px; padding: 28px 22px;">
+          <svg viewBox="0 0 1500 400" style="width:100%; height: auto;" aria-label="SE-ResNet architecture diagram">
+            <defs>
+              <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f3340"/></marker>
+            </defs>
+            <!-- Input -->
+            <rect x="10" y="155" width="120" height="90" rx="12" fill="oklch(0.32 0.014 250)" stroke="oklch(0.22 0.014 250)"/>
+            <text x="70" y="188" text-anchor="middle" font-family="Inter" font-size="16" font-weight="700" fill="#f5f5f2">Input</text>
+            <text x="70" y="210" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.85 0.006 85)">3 × 320</text>
+            <text x="70" y="226" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.85 0.006 85)">× 320</text>
+            <line x1="130" y1="200" x2="162" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
+
+            <!-- Stem -->
+            <rect x="165" y="140" width="130" height="120" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
+            <text x="230" y="170" text-anchor="middle" font-family="Inter" font-size="16" font-weight="700" fill="#14213d">Stem</text>
+            <text x="230" y="192" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">7×7 Conv</text>
+            <text x="230" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">BN · ReLU</text>
+            <text x="230" y="224" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">3→64ch</text>
+            <text x="230" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">MaxPool ÷2</text>
+            <line x1="295" y1="200" x2="327" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
+
+            <!-- Stage 1 -->
+            <rect x="330" y="150" width="130" height="100" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
+            <text x="395" y="178" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Stage 1</text>
+            <text x="395" y="202" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">3× SE-ResBlock</text>
+            <text x="395" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">64ch</text>
+            <line x1="460" y1="200" x2="492" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
+
+            <!-- Stage 2 -->
+            <rect x="495" y="144" width="140" height="112" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
+            <text x="565" y="172" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Stage 2  ↓½</text>
+            <text x="565" y="198" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">4× SE-ResBlock</text>
+            <text x="565" y="220" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">128ch</text>
+            <line x1="635" y1="200" x2="667" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
+
+            <!-- Stage 3 -->
+            <rect x="670" y="138" width="150" height="124" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
+            <text x="745" y="166" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Stage 3  ↓½</text>
+            <text x="745" y="196" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">6× SE-ResBlock</text>
+            <text x="745" y="218" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">256ch</text>
+            <line x1="820" y1="200" x2="852" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
+
+            <!-- Stage 4 -->
+            <rect x="855" y="132" width="150" height="136" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
+            <text x="930" y="160" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Stage 4  ↓½</text>
+            <text x="930" y="192" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">3× SE-ResBlock</text>
+            <text x="930" y="214" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">512ch</text>
+            <line x1="1005" y1="200" x2="1037" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
+
+            <!-- GAP -->
+            <rect x="1040" y="140" width="140" height="120" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
+            <text x="1110" y="166" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#14213d">Global Avg Pool</text>
+            <text x="1110" y="196" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">Dropout(0.5)</text>
+            <text x="1110" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">512-dim</text>
+
+            <!-- branches -->
+            <line x1="1180" y1="170" x2="1222" y2="110" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
+            <line x1="1180" y1="228" x2="1222" y2="290" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
+
+            <!-- Multi-label Head -->
+            <rect x="1225" y="50" width="270" height="120" rx="12" fill="oklch(0.55 0.13 155)" stroke="oklch(0.4 0.12 155)"/>
+            <text x="1360" y="86" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#fff">Multilabel Head</text>
+            <text x="1360" y="114" text-anchor="middle" font-family="Inter" font-size="13" fill="#fff">Linear 512→14</text>
+            <text x="1360" y="140" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#e8f3ec">sigmoid · 14 pathologies</text>
+
+            <!-- Binary Head -->
+            <rect x="1225" y="230" width="270" height="120" rx="12" fill="oklch(0.52 0.17 245)" stroke="oklch(0.38 0.15 245)"/>
+            <text x="1360" y="266" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#fff">Binary Head</text>
+            <text x="1360" y="294" text-anchor="middle" font-family="Inter" font-size="13" fill="#fff">Linear 512→1</text>
+            <text x="1360" y="320" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#e6eefc">sigmoid · Normal/Abnormal</text>
+          </svg>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 18px;">
+          <div class="kv"><span class="k">Parameters</span><span class="v big">23M</span></div>
+          <div class="rule"></div>
+          <ul class="list">
+            <li><strong>Residual stages</strong> — 4 stages, ResNet-50 topology.</li>
+            <li><strong>Squeeze-Excitation</strong> — per-block channel attention recalibrates features.</li>
+            <li><strong>Dual heads</strong> share a 512-dim global-pooled representation.</li>
+            <li><strong>Purpose</strong> — strong baseline trained <em>without</em> outside data.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot"><span>04 / 19</span><span>Custom residual CNN</span></div>
+    </div>
+  </section>
+
+  <!-- 7. MODEL 2 — DENSENET -->
+  <section data-label="Model 2 — DenseNet-121">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>05 · Model 2</span></div>
+      <div class="eyebrow">Model 2 · Transfer Learning (CheXNet)</div>
+      <h2 class="slide-title">DenseNet-121 · ImageNet-pretrained · dense connectivity, 7.9M parameters.</h2>
+
+      <div class="grid" style="grid-template-columns: 1fr 360px; gap: 40px; margin-top: 20px; flex: 1;">
+        <div class="figure" style="min-height: 420px; padding: 32px 22px;">
+          <svg viewBox="0 0 1500 360" style="width:100%; height:auto;" aria-label="DenseNet-121 architecture diagram">
+            <defs>
+              <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f3340"/></marker>
+            </defs>
+            <!-- Input -->
+            <rect x="10" y="130" width="120" height="100" rx="12" fill="oklch(0.32 0.014 250)" stroke="oklch(0.22 0.014 250)"/>
+            <text x="70" y="166" text-anchor="middle" font-family="Inter" font-size="16" font-weight="700" fill="#f5f5f2">Input</text>
+            <text x="70" y="192" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.85 0.006 85)">3 × 320</text>
+            <text x="70" y="210" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.85 0.006 85)">× 320</text>
+            <line x1="130" y1="180" x2="170" y2="180" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
+
+            <!-- DenseNet backbone (purple strong) -->
+            <rect x="175" y="90" width="260" height="180" rx="12" fill="oklch(0.45 0.2 300)" stroke="oklch(0.32 0.18 300)"/>
+            <text x="305" y="128" text-anchor="middle" font-family="Inter" font-size="17" font-weight="700" fill="#fff">DenseNet-121</text>
+            <text x="305" y="150" text-anchor="middle" font-family="Inter" font-size="14" fill="#fff">Backbone</text>
+            <text x="305" y="186" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.93 0.04 300)">ImageNet pretrained</text>
+            <text x="305" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.93 0.04 300)">Dense connectivity</text>
+            <text x="305" y="234" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.93 0.04 300)">7.9M parameters</text>
+            <line x1="435" y1="180" x2="475" y2="180" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
+
+            <!-- Adaptive Avg Pool -->
+            <rect x="480" y="130" width="200" height="100" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
+            <text x="580" y="166" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Adaptive Avg Pool</text>
+            <text x="580" y="200" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#14213d">1024-dim features</text>
+            <line x1="680" y1="180" x2="720" y2="180" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
+
+            <!-- Feature Layer -->
+            <rect x="725" y="110" width="220" height="140" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
+            <text x="835" y="144" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Feature Layer</text>
+            <text x="835" y="174" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#14213d">Linear 1024→512</text>
+            <text x="835" y="196" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#14213d">ReLU</text>
+            <text x="835" y="218" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#14213d">Dropout(0.3)</text>
+
+            <line x1="945" y1="150" x2="990" y2="100" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
+            <line x1="945" y1="210" x2="990" y2="260" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
+
+            <!-- Multi-label -->
+            <rect x="995" y="30" width="460" height="120" rx="12" fill="oklch(0.55 0.13 155)" stroke="oklch(0.4 0.12 155)"/>
+            <text x="1225" y="68" text-anchor="middle" font-family="Inter" font-size="17" font-weight="700" fill="#fff">Multilabel Head</text>
+            <text x="1225" y="96" text-anchor="middle" font-family="Inter" font-size="14" fill="#fff">Linear 512→14</text>
+            <text x="1225" y="122" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#e8f3ec">sigmoid · 14 pathologies</text>
+
+            <!-- Binary -->
+            <rect x="995" y="210" width="460" height="120" rx="12" fill="oklch(0.52 0.17 245)" stroke="oklch(0.38 0.15 245)"/>
+            <text x="1225" y="248" text-anchor="middle" font-family="Inter" font-size="17" font-weight="700" fill="#fff">Binary Head</text>
+            <text x="1225" y="276" text-anchor="middle" font-family="Inter" font-size="14" fill="#fff">Linear 512→1</text>
+            <text x="1225" y="302" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#e6eefc">sigmoid · Normal/Abnormal</text>
+          </svg>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 18px;">
+          <div class="kv"><span class="k">Parameters</span><span class="v big">7.9M</span></div>
+          <div class="rule"></div>
+          <ul class="list">
+            <li><strong>Dense connectivity</strong> — every layer sees all prior feature maps.</li>
+            <li><strong>ImageNet init</strong> — strong visual priors before medical fine-tuning.</li>
+            <li><strong>Feature layer</strong> 1024 → 512, ReLU, Dropout 0.3.</li>
+            <li>Follows <strong>CheXNet (Rajpurkar et al., 2017)</strong> — our gold-standard reference.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot"><span>05 / 19</span><span>DenseNet-121 transfer</span></div>
+    </div>
+  </section>
+
+  <!-- 8. TWO-PHASE FINETUNING -->
+  <section data-label="Two-phase fine-tuning">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>06 · Fine-Tuning</span></div>
+      <div class="eyebrow">Phased Fine-Tuning Schedule</div>
+      <h2 class="slide-title">Freeze the backbone first. Unfreeze once the heads have caught up.</h2>
+      <p class="lede">Standard transfer-learning hygiene: a high learning rate for fresh heads destroys the pretrained backbone. We split training in two.</p>
+
+      <div style="flex: 1; margin-top: 24px; display: flex; align-items: center; justify-content: center;">
+        <svg viewBox="0 0 1400 340" style="width:100%; max-height: 340px;" aria-label="Two-phase fine-tuning schedule">
+          <defs>
+            <marker id="arrF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f3340"/></marker>
+          </defs>
+
+          <!-- Phase 1 -->
+          <rect x="40" y="30" width="460" height="280" rx="12" fill="oklch(0.62 0.18 35)" stroke="oklch(0.48 0.16 35)"/>
+          <!-- Lock icon (closed) -->
+          <g transform="translate(80, 55)">
+            <path d="M8 14 v-4 a12 12 0 0 1 24 0 v4" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+            <rect x="0" y="14" width="40" height="28" rx="4" fill="#fff"/>
+            <circle cx="20" cy="28" r="3.5" fill="oklch(0.48 0.16 35)"/>
+          </g>
+          <text x="270" y="90" text-anchor="middle" font-family="Inter" font-size="32" font-weight="700" fill="#fff">Phase 1</text>
+          <text x="270" y="140" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">Epochs 1–5</text>
+          <text x="270" y="180" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">Backbone frozen</text>
+          <text x="270" y="218" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">Train heads only</text>
+          <text x="270" y="266" text-anchor="middle" font-family="JetBrains Mono" font-size="22" fill="#fff">lr = 0.001</text>
+
+          <!-- Transition arrow -->
+          <line x1="510" y1="170" x2="880" y2="170" stroke="#2f3340" stroke-width="2.5" marker-end="url(#arrF)"/>
+          <rect x="560" y="138" width="290" height="68" rx="12" fill="#ffffff" stroke="oklch(0.86 0.008 250)"/>
+          <text x="705" y="166" text-anchor="middle" font-family="Inter" font-size="17" font-weight="700" fill="#1a1d24">Epoch 6</text>
+          <text x="705" y="192" text-anchor="middle" font-family="JetBrains Mono" font-size="16" fill="#1a1d24">unfreeze_backbone()</text>
+
+          <!-- Phase 2 -->
+          <rect x="890" y="30" width="470" height="280" rx="12" fill="oklch(0.45 0.2 300)" stroke="oklch(0.32 0.18 300)"/>
+          <!-- Open lock -->
+          <g transform="translate(935, 55)">
+            <path d="M8 14 v-4 a12 12 0 0 1 22 -3" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+            <rect x="0" y="14" width="40" height="28" rx="4" fill="#fff"/>
+            <circle cx="20" cy="28" r="3.5" fill="oklch(0.45 0.2 300)"/>
+          </g>
+          <text x="1125" y="90" text-anchor="middle" font-family="Inter" font-size="32" font-weight="700" fill="#fff">Phase 2</text>
+          <text x="1125" y="140" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">Epochs 6–60</text>
+          <text x="1125" y="180" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">End-to-end fine-tuning</text>
+          <text x="1125" y="218" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">All layers trainable</text>
+          <text x="1125" y="266" text-anchor="middle" font-family="JetBrains Mono" font-size="22" fill="#fff">lr = 0.0001</text>
+        </svg>
+      </div>
+
+      <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 28px; margin-top: 28px;">
+        <div class="stat-card accent">
+          <div class="k">Phase 1 · Epochs 1–5</div>
+          <div class="s" style="margin-top: 6px; font-size: 20px; color: #3a1108;">Backbone frozen. Only the new feature layer + two heads train, at <span class="mono">lr = 1e-3</span>. Heads get calibrated on medical features without corrupting ImageNet weights.</div>
+        </div>
+        <div class="stat-card cool">
+          <div class="k">Phase 2 · Epochs 6–60</div>
+          <div class="s" style="margin-top: 6px; font-size: 20px; color: var(--ink);">End-to-end fine-tuning at <span class="mono">lr = 1e-4</span>. Every layer now adapts to chest X-ray statistics; cosine schedule keeps convergence stable.</div>
+        </div>
+      </div>
+
+      <div class="foot"><span>06 / 19</span><span>Freeze → Unfreeze</span></div>
+    </div>
+  </section>
+
+  <!-- 9. TRAINING PIPELINE -->
+  <section data-label="Training pipeline">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>07 · Pipeline</span></div>
+      <div class="eyebrow">End-to-end training pipeline</div>
+      <h2 class="slide-title">From HF dataset snapshot to a tagged checkpoint on HF Hub.</h2>
+
+      <div class="grid" style="grid-template-columns: 480px 1fr; gap: 56px; margin-top: 24px; flex: 1;">
+        <div class="figure" style="padding: 22px 24px; min-height: 620px;">
+          <svg viewBox="0 0 420 920" style="width:100%; height: 100%; max-height: 620px;" aria-label="Training pipeline flowchart">
+            <defs>
+              <marker id="arrP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6072"/></marker>
+            </defs>
+
+            <!-- Cylinder: Dataset -->
+            <g>
+              <ellipse cx="210" cy="28" rx="135" ry="14" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+              <path d="M75 28 V88 a135 14 0 0 0 270 0 V28" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+              <ellipse cx="210" cy="28" rx="135" ry="14" fill="none" stroke="oklch(0.6 0.15 300)"/>
+              <text x="210" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055" font-weight="600">arudaev/chest-xray-14-320</text>
+              <text x="210" y="66" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">112,120 images · 36 shards</text>
+              <text x="210" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">~7.97 GB</text>
+            </g>
+            <line x1="210" y1="102" x2="210" y2="130" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
+            <text x="218" y="122" font-family="JetBrains Mono" font-size="10" fill="#5b6072">snapshot_download</text>
+
+            <!-- Split -->
+            <rect x="75" y="132" width="270" height="70" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+            <text x="210" y="156" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055" font-weight="600">data/images · data/labels.csv</text>
+            <text x="210" y="180" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">train 78,468 · val 11,210</text>
+            <text x="210" y="194" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">test 22,442</text>
+            <line x1="210" y1="202" x2="210" y2="228" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
+
+            <!-- Augmentation -->
+            <rect x="75" y="230" width="270" height="94" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+            <text x="210" y="252" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">Augmentation Pipeline</text>
+            <text x="210" y="272" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">CLAHE · HFlip · Rotate±15°</text>
+            <text x="210" y="290" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">RandomAffine · ColorJitter</text>
+            <text x="210" y="308" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">GaussianBlur · RandomErasing</text>
+            <line x1="210" y1="324" x2="210" y2="352" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
+
+            <!-- Forward Pass -->
+            <rect x="75" y="354" width="270" height="64" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+            <text x="210" y="378" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">⚡ Model Forward Pass</text>
+            <text x="210" y="400" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">torch.cuda.amp.autocast · fp16</text>
+
+            <!-- Split into two heads -->
+            <line x1="210" y1="418" x2="210" y2="434" stroke="#5b6072" stroke-width="1.5"/>
+            <line x1="110" y1="434" x2="310" y2="434" stroke="#5b6072" stroke-width="1.5"/>
+            <line x1="110" y1="434" x2="110" y2="454" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
+            <line x1="310" y1="434" x2="310" y2="454" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
+
+            <!-- Multilabel logits -->
+            <rect x="20" y="456" width="180" height="78" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+            <text x="110" y="478" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055" font-weight="600">multilabel_logits B×14</text>
+            <text x="110" y="498" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2a1055">WeightedBCE + pos_weight</text>
+            <text x="110" y="516" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2a1055">14 classes</text>
+
+            <!-- Binary logits -->
+            <rect x="220" y="456" width="180" height="78" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+            <text x="310" y="478" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055" font-weight="600">binary_logits B×1</text>
+            <text x="310" y="498" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2a1055">BCE · Normal vs.</text>
+            <text x="310" y="516" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2a1055">Abnormal</text>
+
+            <!-- Merge arrows -->
+            <line x1="110" y1="534" x2="110" y2="556" stroke="#5b6072" stroke-width="1.5"/>
+            <line x1="310" y1="534" x2="310" y2="556" stroke="#5b6072" stroke-width="1.5"/>
+            <line x1="110" y1="556" x2="310" y2="556" stroke="#5b6072" stroke-width="1.5"/>
+            <line x1="210" y1="556" x2="210" y2="576" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
+
+            <!-- Combined loss -->
+            <rect x="75" y="578" width="270" height="64" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+            <text x="210" y="602" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">Combined Loss</text>
+            <text x="210" y="624" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">1.0 × multilabel + 0.5 × binary</text>
+            <line x1="210" y1="642" x2="210" y2="668" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
+
+            <!-- Backward -->
+            <rect x="75" y="670" width="270" height="64" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+            <text x="210" y="694" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">Backward · Grad Clip 1.0</text>
+            <text x="210" y="716" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">Grad Accum ×4 · eff. batch 96</text>
+            <line x1="210" y1="734" x2="210" y2="760" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
+
+            <!-- Optimizer -->
+            <rect x="75" y="762" width="270" height="62" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
+            <text x="210" y="784" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">AdamW · CosineAnnealingLR</text>
+            <text x="210" y="806" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">early stop patience = 15</text>
+            <line x1="210" y1="824" x2="210" y2="850" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
+            <text x="218" y="844" font-family="JetBrains Mono" font-size="10" fill="#5b6072">↑ best val AUC-ROC</text>
+
+            <!-- Checkpoint -->
+            <rect x="75" y="852" width="270" height="62" rx="6" fill="oklch(0.19 0.012 250)" stroke="oklch(0.19 0.012 250)"/>
+            <text x="210" y="876" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="oklch(0.78 0.13 60)">💾 Best Checkpoint → HF Hub</text>
+            <text x="210" y="898" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#e6eefc">model · config · history.json</text>
+          </svg>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 22px; padding-top: 8px;">
+          <div>
+            <div class="kv" style="margin-bottom: 8px;"><span class="k">Step 01 · Data</span></div>
+            <div class="body"><code class="mono">snapshot_download</code> pins a Parquet revision; <strong>78,468 / 11,210 / 22,442</strong> split.</div>
+          </div>
+          <div>
+            <div class="kv" style="margin-bottom: 8px;"><span class="k">Step 02 · Augmentation</span></div>
+            <div class="body">CLAHE (LAB space), HFlip, Rotate ±15°, RandomAffine, ColorJitter, GaussianBlur, RandomErasing.</div>
+          </div>
+          <div>
+            <div class="kv" style="margin-bottom: 8px;"><span class="k">Step 03 · Forward pass</span></div>
+            <div class="body">Mixed precision <code class="mono">torch.cuda.amp</code> · fp16 — ~2× throughput on T4.</div>
+          </div>
+          <div>
+            <div class="kv" style="margin-bottom: 8px;"><span class="k">Step 04 · Loss &amp; optimisation</span></div>
+            <div class="body">Weighted BCE with <code class="mono">pos_weight</code> per class · AdamW · CosineAnnealingLR · grad clip 1.0 · grad accum ×4 → effective batch <strong>96</strong>.</div>
+          </div>
+          <div>
+            <div class="kv" style="margin-bottom: 8px;"><span class="k">Step 05 · Checkpoint + Hub</span></div>
+            <div class="body">Best epoch by <strong>val macro AUC-ROC</strong>; model, config, history &amp; card pushed to HF Hub.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot"><span>07 / 19</span><span>Snapshot → Augment → Train → Checkpoint → Hub</span></div>
+    </div>
+  </section>
+
+  <!-- 10. BIG DATA INFRASTRUCTURE -->
+  <section data-label="Big Data infrastructure">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>08 · Infrastructure</span></div>
+      <div class="eyebrow">The "Big Data" side of the project</div>
+      <h2 class="slide-title">A cloud-only workflow: 8 GB of shards, no local GPU, reproducible runs.</h2>
+
+      <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 32px;">
+        <div class="stat-card">
+          <div class="k">Source code</div>
+          <div class="v" style="font-size: 26px; font-weight: 700; color: var(--ink); margin-top: 10px;">GitHub</div>
+          <div class="s">CI on every push — <span class="mono">ruff</span> + <span class="mono">pytest</span> (51 tests) + <span class="mono">mypy</span>.</div>
+        </div>
+        <div class="stat-card">
+          <div class="k">Dataset</div>
+          <div class="v" style="font-size: 26px; font-weight: 700; color: var(--ink); margin-top: 10px;">HF Hub</div>
+          <div class="s">36 Parquet shards · 320² · pinned revision for reproducibility.</div>
+        </div>
+        <div class="stat-card accent">
+          <div class="k">Training compute</div>
+          <div class="v" style="font-size: 26px; font-weight: 700; color: #3a1108; margin-top: 10px;">Kaggle Kernels</div>
+          <div class="s" style="color: #3a1108;">Free T4 / P100 GPU · 30 h/week · kernels bundle the entire source tree.</div>
+        </div>
+        <div class="stat-card cool">
+          <div class="k">Model artifacts · Demo</div>
+          <div class="v" style="font-size: 26px; font-weight: 700; color: var(--ink); margin-top: 10px;">HF Hub + Spaces</div>
+          <div class="s" style="color: var(--ink);">Auto-upload of checkpoints; Streamlit demo deploys on push to <span class="mono">main</span>.</div>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 36px;">
+        <div>
+          <div class="kv" style="margin-bottom: 10px;"><span class="k">Why this matters for "Big Data"</span></div>
+          <ul class="list">
+            <li><strong>Streaming metadata</strong> — EDA runs locally without downloading the 8 GB dataset.</li>
+            <li><strong>Sharded Parquet</strong> — readers parallelise across shards; disk is never the bottleneck.</li>
+            <li><strong>Mixed precision + grad accumulation</strong> — effective batch 96 on a single 16 GB T4.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="kv" style="margin-bottom: 10px;"><span class="k">Reproducibility guardrails</span></div>
+          <ul class="list">
+            <li><strong>Pinned dataset revision</strong> — <span class="mono">44443e6…</span> — same bytes, every run.</li>
+            <li><strong>Kernel payload</strong> — <span class="mono">dispatch.py</span> embeds the current source tree base64-encoded.</li>
+            <li><strong>Tagged model cards</strong> — config + metrics + history.json alongside every checkpoint.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot"><span>08 / 19</span><span>GitHub · HF Hub · Kaggle · Streamlit</span></div>
+    </div>
+  </section>
+
+  <!-- 11. SECTION DIVIDER — RESULTS -->
+  <section data-label="Section — Results" class="ink">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>Section 2 · Results</span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <span class="section-accent-rule"></span>
+        <div class="section-number">— PART 02</div>
+        <div class="section-title">Results.</div>
+        <div class="section-desc">Measured on the held-out validation split. Primary metric: macro-averaged AUC-ROC across all 14 pathologies. We also report binary AUC / F1 for the triage head.</div>
+      </div>
+      <div class="foot"><span>09 / 19</span><span>Results</span></div>
+    </div>
+  </section>
+
+  <!-- 12. HEADLINE NUMBERS -->
+  <section data-label="Headline numbers">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>09 · Headline</span></div>
+      <div class="eyebrow">Headline — best validation metrics</div>
+      <h2 class="slide-title">DenseNet-121 matches the CheXNet benchmark. The custom CNN trails by ~4.5 pp.</h2>
+
+      <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 36px; margin-top: 32px;">
+        <!-- DenseNet card -->
+        <div class="stat-card cool" style="padding: 36px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <div class="k" style="color: var(--ink);">DenseNet-121 · Transfer</div>
+            <span class="pill" style="background: #fff; border-color: oklch(0.78 0.08 245); color: var(--ink);">Best @ epoch 18</span>
+          </div>
+          <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 18px;">
+            <div>
+              <div class="k" style="color: var(--ink); font-size: 12px;">Macro AUC-ROC</div>
+              <div class="n" style="color: var(--ink);">0.8459</div>
+            </div>
+            <div>
+              <div class="k" style="color: var(--ink); font-size: 12px;">Binary AUC-ROC</div>
+              <div class="n" style="color: var(--ink); font-size: 52px;">0.7867</div>
+            </div>
+            <div>
+              <div class="k" style="color: var(--ink); font-size: 12px;">Binary F1</div>
+              <div class="n" style="color: var(--ink); font-size: 52px;">0.6736</div>
+            </div>
+          </div>
+          <div class="s" style="color: var(--ink); margin-top: 18px; font-size: 17px;">Early-stopped — validation loss began diverging after epoch 20 while AUC plateaued.</div>
+        </div>
+
+        <!-- ResNet card -->
+        <div class="stat-card" style="padding: 36px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <div class="k">Custom SE-ResNet · From scratch</div>
+            <span class="pill">Best @ epoch 60</span>
+          </div>
+          <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 18px;">
+            <div>
+              <div class="k" style="font-size: 12px;">Macro AUC-ROC</div>
+              <div class="n">0.8008</div>
+            </div>
+            <div>
+              <div class="k" style="font-size: 12px;">Binary AUC-ROC</div>
+              <div class="n" style="font-size: 52px;">0.7571</div>
+            </div>
+            <div>
+              <div class="k" style="font-size: 12px;">Binary F1</div>
+              <div class="n" style="font-size: 52px;">0.6474</div>
+            </div>
+          </div>
+          <div class="s" style="margin-top: 18px; font-size: 17px;">Still climbing slowly at epoch 75 — gap is about compute budget, not ceiling.</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 36px; padding: 22px 28px; border: 1px solid var(--rule); border-left: 3px solid var(--coral); border-radius: 8px; background: var(--panel);">
+        <div class="body" style="color: var(--ink);"><strong>Takeaway.</strong> Transfer learning wins on every metric, at <strong>3× fewer parameters</strong> and <strong>3× faster wall-clock convergence</strong> (18 vs. 60+ epochs). ImageNet priors matter, even for medical imagery.</div>
+      </div>
+
+      <div class="foot"><span>09 / 19</span><span>Best validation metrics</span></div>
+    </div>
+  </section>
+
+  <!-- 13. TRAINING CURVES -->
+  <section data-label="Training curves">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>10 · Training curves</span></div>
+      <div class="eyebrow">Validation macro AUC-ROC over training</div>
+      <h2 class="slide-title">DenseNet saturates fast at epoch 6. The scratch CNN grinds upward for 60 epochs.</h2>
+
+      <div style="flex: 1; display: flex; margin-top: 24px;">
+        <svg id="curves" viewBox="0 0 1700 560" style="width:100%; height:100%;" aria-label="Training AUC-ROC over epochs"></svg>
+      </div>
+
+      <div style="display: flex; gap: 36px; margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--ink);">
+        <div><span style="display:inline-block; width:24px; height:3px; background: oklch(0.55 0.15 245); vertical-align: middle; margin-right: 8px;"></span> DenseNet-121 · Transfer</div>
+        <div><span style="display:inline-block; width:24px; height:3px; background: oklch(0.62 0.15 30); vertical-align: middle; margin-right: 8px;"></span> Custom SE-ResNet · Scratch</div>
+        <div style="color: var(--muted);"><span style="display:inline-block; width:24px; height:1px; border-top: 1px dashed oklch(0.55 0.012 250); vertical-align: middle; margin-right: 8px;"></span> Best checkpoint</div>
+        <div style="color: var(--muted);"><span style="display:inline-block; width:24px; height:1px; border-top: 1px dashed oklch(0.55 0.012 250); vertical-align: middle; margin-right: 8px;"></span> CheXNet benchmark (0.841)</div>
+      </div>
+
+      <div class="foot"><span>10 / 19</span><span>Validation macro AUC-ROC</span></div>
+    </div>
+  </section>
+
+  <!-- 14. PER-CLASS AUC -->
+  <section data-label="Per-class AUC">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>11 · Per-class</span></div>
+      <div class="eyebrow">DenseNet-121 · per-pathology AUC at best epoch</div>
+      <h2 class="slide-title">Strong on structural findings. Weakest on the noisiest labels.</h2>
+
+      <div class="grid" style="grid-template-columns: 1.5fr 1fr; gap: 48px; flex: 1; margin-top: 16px;">
+        <div>
+          <div id="classBars"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div>
+            <div class="kv" style="margin-bottom: 10px;"><span class="k">Top performers</span></div>
+            <ul class="list">
+              <li><strong>Edema · 0.9255</strong>, <strong>Hernia · 0.9242</strong>, <strong>Emphysema · 0.9107</strong> — visually distinctive, well-separated classes.</li>
+            </ul>
+          </div>
+          <div>
+            <div class="kv" style="margin-bottom: 10px;"><span class="k">Trailing</span></div>
+            <ul class="list">
+              <li><strong>Infiltration · 0.7133</strong> — the noisiest label in the NIH schema; radiologist agreement is low to begin with.</li>
+              <li><strong>Pneumonia · 0.7397</strong> — broad definition, overlaps with Consolidation &amp; Infiltration.</li>
+            </ul>
+          </div>
+          <div>
+            <div class="kv" style="margin-bottom: 10px;"><span class="k">Clinical reading</span></div>
+            <p class="body">Classes with clear anatomical signatures (cardiomegaly, emphysema) are the easy wins. Diffuse infiltrative patterns are the hard ones — matches radiologists' own reliability.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot"><span>11 / 19</span><span>14-class AUC-ROC</span></div>
+    </div>
+  </section>
+
+  <!-- 15. CHEXNET BENCHMARK -->
+  <section data-label="CheXNet benchmark">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>12 · Benchmark</span></div>
+      <div class="eyebrow">Benchmark positioning</div>
+      <h2 class="slide-title">We match the seminal CheXNet result, at a fraction of the compute.</h2>
+
+      <div style="flex: 1; display: flex; align-items: center; justify-content: center; margin-top: 20px;">
+        <svg viewBox="0 0 1600 460" style="width:100%; max-height: 460px;">
+          <!-- grid -->
+          <line class="chart-grid" x1="300" y1="60" x2="300" y2="400"/>
+          <line class="chart-grid" x1="1500" y1="60" x2="1500" y2="400"/>
+          <!-- axis -->
+          <line x1="300" y1="420" x2="1500" y2="420" stroke="#2f3340" stroke-width="1.5"/>
+          <text class="chart-axis" x="300" y="450" text-anchor="middle">0.70</text>
+          <text class="chart-axis" x="600" y="450" text-anchor="middle">0.75</text>
+          <text class="chart-axis" x="900" y="450" text-anchor="middle">0.80</text>
+          <text class="chart-axis" x="1200" y="450" text-anchor="middle">0.85</text>
+          <text class="chart-axis" x="1500" y="450" text-anchor="middle">0.90</text>
+
+          <!-- CheXNet benchmark line -->
+          <line x1="1246" y1="60" x2="1246" y2="410" stroke="oklch(0.55 0.012 250)" stroke-dasharray="6 6" stroke-width="1.5"/>
+          <text class="chart-label" x="1246" y="50" text-anchor="middle" fill="#5b6072" font-family="JetBrains Mono" font-size="13">CheXNet benchmark · 0.841</text>
+
+          <!-- Wang 2017 -->
+          <rect x="300" y="100" width="288" height="44" fill="oklch(0.90 0.008 240)" stroke="oklch(0.82 0.008 240)" stroke-width="1"/>
+          <text class="chart-label" x="285" y="128" text-anchor="end">Wang et al. 2017 (original NIH paper)</text>
+          <text class="chart-label" x="600" y="128" font-family="JetBrains Mono" font-size="15" fill="#1a1d24">0.748</text>
+
+          <!-- CheXVision scratch -->
+          <rect x="300" y="170" width="605" height="44" fill="oklch(0.62 0.15 30)"/>
+          <text class="chart-label" x="285" y="198" text-anchor="end">CheXVision · SE-ResNet (scratch)</text>
+          <text class="chart-label" x="917" y="198" font-family="JetBrains Mono" font-size="15" fill="#1a1d24">0.8008</text>
+
+          <!-- CheXNet -->
+          <rect x="300" y="240" width="846" height="44" fill="oklch(0.90 0.008 240)" stroke="oklch(0.82 0.008 240)" stroke-width="1"/>
+          <text class="chart-label" x="285" y="268" text-anchor="end">CheXNet (Rajpurkar et al., 2017)</text>
+          <text class="chart-label" x="1158" y="268" font-family="JetBrains Mono" font-size="15" fill="#1a1d24">0.841</text>
+
+          <!-- CheXVision DenseNet -->
+          <rect x="300" y="310" width="875" height="44" fill="oklch(0.55 0.15 245)"/>
+          <text class="chart-label" x="285" y="338" text-anchor="end" font-weight="600">CheXVision · DenseNet-121 (ours)</text>
+          <text class="chart-label" x="1187" y="338" font-family="JetBrains Mono" font-size="15" font-weight="600" fill="#1a1d24">0.8459</text>
+        </svg>
+      </div>
+
+      <div style="padding: 22px 28px; border: 1px solid var(--rule); border-left: 3px solid var(--blue); border-radius: 8px; background: var(--panel); margin-top: 20px;">
+        <div class="body" style="color: var(--ink);"><strong>Context.</strong> CheXNet (Rajpurkar et al., 2017) established DenseNet-121 as the standard for this dataset. Our pipeline reproduces &amp; slightly exceeds it — on a single free Kaggle GPU, 18 epochs, 7.9M params. The custom scratch model is +5.3 pp over the 2017 NIH paper that published the dataset.</div>
+      </div>
+
+      <div class="foot"><span>12 / 19</span><span>Macro AUC-ROC comparison</span></div>
+    </div>
+  </section>
+
+  <!-- 16. LESSON: SCRATCH VS TRANSFER -->
+  <section data-label="Scratch vs. transfer">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>13 · Lesson</span></div>
+      <div class="eyebrow">What the comparison taught us</div>
+      <h2 class="slide-title">Transfer wins — but the scratch model told us why.</h2>
+
+      <table class="cmp" style="margin-top: 26px;">
+        <thead>
+          <tr>
+            <th style="width: 30%;"></th>
+            <th style="width: 35%;">Custom SE-ResNet (scratch)</th>
+            <th style="width: 35%;">DenseNet-121 (transfer)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-label">Parameters</td>
+            <td>~23 M</td>
+            <td><strong>7.9 M</strong></td>
+          </tr>
+          <tr>
+            <td class="row-label">Epochs to best</td>
+            <td>60+ (still climbing)</td>
+            <td><strong>18</strong></td>
+          </tr>
+          <tr>
+            <td class="row-label">Macro AUC-ROC</td>
+            <td>0.8008</td>
+            <td><strong>0.8459</strong> (+4.5 pp)</td>
+          </tr>
+          <tr>
+            <td class="row-label">Binary AUC / F1</td>
+            <td>0.7571 / 0.6474</td>
+            <td><strong>0.7867 / 0.6736</strong></td>
+          </tr>
+          <tr>
+            <td class="row-label">When it fails</td>
+            <td>Rare, diffuse, subtle classes — never sees enough examples with random init.</td>
+            <td>Same failure modes, but with a higher floor — pretrained edges + textures transfer cleanly.</td>
+          </tr>
+          <tr>
+            <td class="row-label">Our read</td>
+            <td>A strong "sanity baseline" and ablation for the ImageNet-prior question.</td>
+            <td><strong>Production-grade.</strong> We'd ship this if the project had a clinical partner.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="foot"><span>13 / 19</span><span>Head-to-head comparison</span></div>
+    </div>
+  </section>
+
+  <!-- 17. LIMITATIONS -->
+  <section data-label="Limitations">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>14 · Limitations</span></div>
+      <div class="eyebrow">What to trust, what not to trust</div>
+      <h2 class="slide-title">Honest about the ceiling.</h2>
+
+      <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 36px; margin-top: 32px; flex: 1;">
+        <div>
+          <div class="kv" style="margin-bottom: 14px;"><span class="k">Label quality</span></div>
+          <ul class="list">
+            <li>NIH labels are <strong>patient-level</strong>, extracted by NLP from reports — not lesion-level.</li>
+            <li>"Infiltration" &amp; "Pneumonia" overlap even between radiologists. Our lowest AUCs are where <em>ground truth itself</em> is noisy.</li>
+          </ul>
+
+          <div class="kv" style="margin-bottom: 14px; margin-top: 28px;"><span class="k">Evaluation scope</span></div>
+          <ul class="list">
+            <li>AUCs reported are on the <strong>validation split</strong>. Test set is held for the final report.</li>
+            <li>No external-hospital evaluation. Distribution shift from equipment / preprocessing will degrade performance.</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="kv" style="margin-bottom: 14px;"><span class="k">Deployment caveats</span></div>
+          <ul class="list">
+            <li><strong>Not clinical.</strong> This is a research / educational system. Predictions do not substitute a radiologist.</li>
+            <li>The binary triage head is the more defensible output — it fails gracefully and can be calibrated to a sensitivity target.</li>
+          </ul>
+
+          <div class="kv" style="margin-bottom: 14px; margin-top: 28px;"><span class="k">Compute envelope</span></div>
+          <ul class="list">
+            <li>Single free T4 GPU on Kaggle, 30 h/week cap — no hyperparameter sweeps, no cross-validation.</li>
+            <li>Scratch model did not converge within budget; more epochs may narrow the gap but not close it.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot"><span>14 / 19</span><span>Limitations</span></div>
+    </div>
+  </section>
+
+  <!-- 18. FUTURE WORK -->
+  <section data-label="Future work">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>15 · Future work</span></div>
+      <div class="eyebrow">Where this goes next</div>
+      <h2 class="slide-title">Three directions, ranked by expected lift.</h2>
+
+      <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 40px; flex: 1;">
+        <div class="stat-card cool">
+          <div class="k" style="color: var(--ink);">01 · Test-Time Augmentation + Ensemble</div>
+          <div class="s" style="font-size: 19px; color: var(--ink); margin-top: 16px; line-height: 1.45;">
+            Average 4 views (identity, h-flip, ±7° rotate) per model, then average both models. The two architectures fail on <em>different</em> examples — the ensemble consistently improves macro AUC with zero retraining.
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="k">02 · External validation</div>
+          <div class="s" style="font-size: 19px; margin-top: 16px; line-height: 1.45;">
+            Evaluate on CheXpert or MIMIC-CXR without fine-tuning. Quantify the true distribution-shift penalty; this is the question any clinical reviewer will ask first.
+          </div>
+        </div>
+        <div class="stat-card accent">
+          <div class="k" style="color: #3a1108;">03 · Grad-CAM &amp; interpretability audit</div>
+          <div class="s" style="font-size: 19px; color: #3a1108; margin-top: 16px; line-height: 1.45;">
+            Generate Grad-CAM heatmaps for every class and visually audit whether the model attends to clinically meaningful regions — or to spurious markers (annotations, equipment).
+          </div>
+        </div>
+      </div>
+
+      <div class="foot"><span>15 / 19</span><span>Future work</span></div>
+    </div>
+  </section>
+
+  <!-- 19. THANK YOU / Q&A -->
+  <section data-label="Thank you" class="ink">
+    <div class="slide-pad">
+      <div class="topbar"><span class="brand">CheXVision</span><span>Q &amp; A</span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <div class="section-number">— THANK YOU</div>
+        <div class="section-title">Questions?</div>
+        <div class="section-desc" style="margin-top: 20px;">CheXVision · BIG D(ATA) Team · Deep Learning &amp; Big Data, AIN program</div>
+
+        <div style="display: flex; gap: 56px; margin-top: 56px;">
+          <div>
+            <div class="k mono" style="font-size: 12px; letter-spacing: 0.14em; color: oklch(0.65 0.012 250); text-transform: uppercase; margin-bottom: 8px;">Code</div>
+            <div style="font-size: 22px; color: oklch(0.96 0.006 85); font-family: 'JetBrains Mono', monospace;">github.com/arudaev/chexvision</div>
+          </div>
+          <div>
+            <div class="k mono" style="font-size: 12px; letter-spacing: 0.14em; color: oklch(0.65 0.012 250); text-transform: uppercase; margin-bottom: 8px;">Demo</div>
+            <div style="font-size: 22px; color: oklch(0.96 0.006 85); font-family: 'JetBrains Mono', monospace;">hf.co/spaces/arudaev/chexvision-demo</div>
+          </div>
+          <div>
+            <div class="k mono" style="font-size: 12px; letter-spacing: 0.14em; color: oklch(0.65 0.012 250); text-transform: uppercase; margin-bottom: 8px;">Models</div>
+            <div style="font-size: 22px; color: oklch(0.96 0.006 85); font-family: 'JetBrains Mono', monospace;">hf.co/arudaev/chexvision-{densenet, scratch}</div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>19 / 19</span><span>Thank you</span></div>
+    </div>
+  </section>
+
+</deck-stage>
+
+<script>
+/* ----------------- Training curves SVG ----------------- */
+(function(){
+  const dense = [0.6748690781254583,0.6963303048898386,0.7041644252113736,0.7115742873720903,0.7172102566996948,0.7905994114174624,0.810920922006727,0.8211061947914529,0.83170534782002,0.8353719186085854,0.836936856831387,0.8415721432417781,0.8417229334900547,0.8437255116407735,0.8441203725443387,0.8446463492148011,0.8439425516705368,0.8458609069545974,0.8328883076496458,0.8378938406822314,0.8377455127591313,0.8353224748952416,0.8336654948819363,0.836216788026232,0.8317317809998471,0.8307567269501813,0.8338350893281437,0.8257617060309652,0.8323103592175635,0.823613606896898,0.8277971314431126,0.8235523396677928,0.8248399844979165];
+  const scratch = [0.5600889783341848,0.6006936068308715,0.6135082712869522,0.619662650828645,0.6503016827609143,0.669356745858073,0.6801516399253448,0.6956458946755157,0.6911901512890865,0.6878028916584179,0.711056476048291,0.7249608742542427,0.7285883097397269,0.7313872465588427,0.7410520255477292,0.7475906933947389,0.7534237658041478,0.7438914668774912,0.7640327407828283,0.7626778933313453,0.7681162343266192,0.7674014927002437,0.769074441384282,0.764215790181779,0.7714702353734016,0.7735906794011821,0.7778793373631595,0.7778735125103365,0.7802085311640891,0.7803372778518832,0.7842598628917763,0.7823228231152382,0.7838151999323013,0.7838244382870435,0.7850657680692592,0.7835648581099827,0.7861069970089803,0.7871647223831422,0.790835876576403,0.7940458179780945,0.7915442563521022,0.7958718966986681,0.7914044080104288,0.7919859158077863,0.7950329793603457,0.7943837575081225,0.7944332949980312,0.7933693057425811,0.7951732943980258,0.7963023289821489,0.7952354460544692,0.7973244129856287,0.7939589758854859,0.7983526417614518,0.7977997949640275,0.7962216526625349,0.799182696741477,0.7958033013422208,0.7996982808695525,0.8008184337727041,0.7993454764932675,0.7987675627632589,0.7970890503264659,0.7970806759058202,0.795822651719548,0.7959650228406401,0.79570970273623,0.7964225370744886,0.7963621380965237,0.7969704582418411,0.7922591015985978,0.7940750137887933,0.7950192853888799,0.7953308259817139,0.7979492069497339];
+
+  const svg = document.getElementById('curves');
+  if (!svg) return;
+  const W = 1700, H = 560;
+  const PAD = {l: 80, r: 40, t: 40, b: 60};
+  const maxEp = 75;
+  const yMin = 0.55, yMax = 0.90;
+
+  const xScale = e => PAD.l + (e/(maxEp-1)) * (W - PAD.l - PAD.r);
+  const yScale = v => PAD.t + (1 - (v - yMin) / (yMax - yMin)) * (H - PAD.t - PAD.b);
+
+  let html = '';
+
+  // y grid
+  for (let v = 0.60; v <= 0.90 + 1e-6; v += 0.05) {
+    const y = yScale(v);
+    html += `<line class="chart-grid" x1="${PAD.l}" y1="${y}" x2="${W - PAD.r}" y2="${y}"/>`;
+    html += `<text class="chart-axis" x="${PAD.l - 10}" y="${y + 4}" text-anchor="end">${v.toFixed(2)}</text>`;
+  }
+  // x axis ticks
+  [0, 10, 20, 30, 40, 50, 60, 70].forEach(e => {
+    const x = xScale(e);
+    html += `<line stroke="oklch(0.86 0.008 250)" x1="${x}" y1="${H - PAD.b}" x2="${x}" y2="${H - PAD.b + 6}"/>`;
+    html += `<text class="chart-axis" x="${x}" y="${H - PAD.b + 26}" text-anchor="middle">${e}</text>`;
+  });
+  html += `<text class="chart-axis" x="${W/2}" y="${H - 10}" text-anchor="middle">EPOCH</text>`;
+  html += `<text class="chart-axis" x="20" y="${PAD.t - 12}">MACRO AUC-ROC</text>`;
+
+  // benchmark line
+  const yBench = yScale(0.841);
+  html += `<line x1="${PAD.l}" y1="${yBench}" x2="${W - PAD.r}" y2="${yBench}" stroke="oklch(0.55 0.012 250)" stroke-dasharray="6 6" stroke-width="1.2"/>`;
+  html += `<text class="chart-axis" x="${W - PAD.r - 6}" y="${yBench - 6}" text-anchor="end">CheXNet · 0.841</text>`;
+
+  // lines
+  const toPath = (arr) => arr.map((v, i) => (i === 0 ? 'M' : 'L') + xScale(i) + ',' + yScale(v)).join(' ');
+  html += `<path d="${toPath(scratch)}" fill="none" stroke="oklch(0.62 0.15 30)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  html += `<path d="${toPath(dense)}" fill="none" stroke="oklch(0.55 0.15 245)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+  // best-epoch markers
+  // DenseNet best at index 17 (epoch 18, 0-index 17), value 0.8458609
+  const bx = xScale(17), by = yScale(0.8458609);
+  html += `<circle cx="${bx}" cy="${by}" r="7" fill="oklch(0.55 0.15 245)" stroke="#fff" stroke-width="2"/>`;
+  html += `<line x1="${bx}" y1="${by}" x2="${bx}" y2="${H - PAD.b}" stroke="oklch(0.55 0.15 245)" stroke-dasharray="3 5" stroke-width="1"/>`;
+  html += `<text class="chart-label" x="${bx + 12}" y="${by - 10}" font-family="JetBrains Mono" font-size="13" fill="oklch(0.55 0.15 245)">best · 0.8459 @ e18</text>`;
+
+  // Scratch best index 59 (epoch 60), value 0.80081843
+  const sx = xScale(59), sy = yScale(0.8008184337727041);
+  html += `<circle cx="${sx}" cy="${sy}" r="7" fill="oklch(0.62 0.15 30)" stroke="#fff" stroke-width="2"/>`;
+  html += `<text class="chart-label" x="${sx + 12}" y="${sy - 8}" font-family="JetBrains Mono" font-size="13" fill="oklch(0.62 0.15 30)">best · 0.8008 @ e60</text>`;
+
+  // annotations
+  html += `<rect x="${xScale(4) - 50}" y="${PAD.t + 10}" width="170" height="42" rx="6" fill="oklch(0.96 0.02 40)" stroke="oklch(0.84 0.06 40)"/>`;
+  html += `<text class="chart-label" x="${xScale(4) - 40}" y="${PAD.t + 28}" font-family="JetBrains Mono" font-size="12" fill="oklch(0.45 0.1 30)">unfreeze_backbone()</text>`;
+  html += `<text class="chart-label" x="${xScale(4) - 40}" y="${PAD.t + 44}" font-family="JetBrains Mono" font-size="11" fill="oklch(0.45 0.1 30)">epoch 6 · +7 pp jump</text>`;
+  html += `<line x1="${xScale(5)}" y1="${PAD.t + 52}" x2="${xScale(5)}" y2="${yScale(0.79)}" stroke="oklch(0.62 0.12 30)" stroke-width="1" stroke-dasharray="2 3"/>`;
+
+  svg.innerHTML = html;
+})();
+
+/* ----------------- Per-class bars ----------------- */
+(function(){
+  const root = document.getElementById('classBars');
+  if (!root) return;
+  const data = [
+    ['Edema', 0.9255, true],
+    ['Hernia', 0.9242, true],
+    ['Emphysema', 0.9107, true],
+    ['Cardiomegaly', 0.9010, false],
+    ['Effusion', 0.8873, false],
+    ['Mass', 0.8756, false],
+    ['Pneumothorax', 0.8705, false],
+    ['Pleural Thickening', 0.8377, false],
+    ['Atelectasis', 0.8334, false],
+    ['Fibrosis', 0.8085, false],
+    ['Nodule', 0.8084, false],
+    ['Consolidation', 0.8063, false],
+    ['Pneumonia', 0.7397, false],
+    ['Infiltration', 0.7133, false],
+  ];
+  const min = 0.70, max = 0.95;
+  let html = '';
+  data.forEach(([name, v, top]) => {
+    const pct = ((v - min) / (max - min)) * 100;
+    html += `<div class="bar-row ${top ? 'top' : ''}">
+      <div class="name">${name}</div>
+      <div class="track"><div class="fill" style="width: ${pct.toFixed(1)}%"></div></div>
+      <div class="val">${v.toFixed(4)}</div>
+    </div>`;
+  });
+  root.innerHTML = html;
+})();
+
+/* ----------------- Tweaks ----------------- */
+(function(){
+  const TWEAKS = /*EDITMODE-BEGIN*/{
+    "accent": "blue",
+    "sectionBg": "ink",
+    "presenterTags": false,
+    "typeScale": 1
+  }/*EDITMODE-END*/;
+
+  const ACCENTS = {
+    coral:  { h: 'oklch(0.62 0.15 30)',  soft: 'oklch(0.94 0.04 40)',  sh: 'oklch(0.85 0.06 40)',  ink: 'oklch(0.78 0.13 60)' },
+    blue:   { h: 'oklch(0.55 0.15 245)', soft: 'oklch(0.93 0.04 245)', sh: 'oklch(0.84 0.06 245)', ink: 'oklch(0.78 0.1 245)' },
+    green:  { h: 'oklch(0.55 0.13 155)', soft: 'oklch(0.93 0.05 155)', sh: 'oklch(0.82 0.08 155)', ink: 'oklch(0.78 0.12 155)' },
+    violet: { h: 'oklch(0.52 0.18 300)', soft: 'oklch(0.93 0.05 300)', sh: 'oklch(0.82 0.08 300)', ink: 'oklch(0.78 0.14 300)' }
+  };
+
+  // Slide index → presenter (1/2/3). Based on the pacing: 1-4 → P1, 5-10 → P2, 11-19 → P3
+  const PRESENTER = [1,1,1,1, 2,2,2,2,2,2, 3,3,3,3,3,3,3,3,3];
+
+  function applyAccent(name) {
+    const a = ACCENTS[name] || ACCENTS.coral;
+    document.documentElement.style.setProperty('--coral', a.h);
+    document.documentElement.style.setProperty('--coral-soft', a.soft);
+    document.documentElement.style.setProperty('--accent-h', a.h);
+    // adjust secondary hooks
+    document.querySelectorAll('.ink .eyebrow, .ink .section-number').forEach(el => el.style.color = a.ink);
+  }
+
+  function applySectionBg(mode) {
+    document.querySelectorAll('deck-stage > section').forEach(sec => {
+      const label = sec.getAttribute('data-label') || '';
+      const isSection = /^Section|Thank you/.test(label);
+      if (!isSection) return;
+      if (mode === 'ink') sec.classList.add('ink');
+      else sec.classList.remove('ink');
+    });
+  }
+
+  function applyTypeScale(scale) {
+    document.documentElement.style.setProperty('--type-scale', scale);
+    // apply via a style rule
+    let s = document.getElementById('tweak-type-style');
+    if (!s) { s = document.createElement('style'); s.id = 'tweak-type-style'; document.head.appendChild(s); }
+    s.textContent = `
+      deck-stage > section .body, deck-stage > section ul.list li, deck-stage > section .stat-card .s,
+      deck-stage > section p.lede { font-size: calc(var(--_base, 22px) * ${scale}); }
+      deck-stage > section p.lede { --_base: 26px; }
+      deck-stage > section ul.list li { --_base: 22px; }
+      deck-stage > section .body { --_base: 22px; }
+      deck-stage > section .stat-card .s { --_base: 18px; }
+    `;
+  }
+
+  function applyPresenterTags(on) {
+    // remove existing
+    document.querySelectorAll('.presenter-tag').forEach(el => el.remove());
+    if (!on) return;
+    const slides = document.querySelectorAll('deck-stage > section');
+    slides.forEach((sec, i) => {
+      const p = PRESENTER[i] || '';
+      if (!p) return;
+      const tag = document.createElement('div');
+      tag.className = 'presenter-tag';
+      tag.textContent = 'P' + p;
+      Object.assign(tag.style, {
+        position: 'absolute', top: '24px', right: '24px',
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: '14px', letterSpacing: '0.14em',
+        padding: '6px 12px', borderRadius: '999px',
+        background: 'var(--coral)', color: '#fff',
+        fontWeight: '600', zIndex: 20
+      });
+      sec.appendChild(tag);
+    });
+  }
+
+  function applyAll(t) {
+    applyAccent(t.accent);
+    applySectionBg(t.sectionBg);
+    applyTypeScale(t.typeScale || 1.0);
+    applyPresenterTags(!!t.presenterTags);
+  }
+
+  let state = { ...TWEAKS };
+  applyAll(state);
+
+  // Edit-mode protocol
+  let panel = null;
+
+  function buildPanel() {
+    panel = document.createElement('div');
+    panel.id = 'tweaks-panel';
+    panel.innerHTML = `
+      <style>
+        #tweaks-panel { position: fixed; right: 20px; bottom: 20px; z-index: 9999;
+          width: 300px; background: #fff; color: #1a1d24;
+          border: 1px solid oklch(0.86 0.008 250); border-radius: 14px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+          font-family: 'Inter', sans-serif; font-size: 13px;
+          padding: 0; overflow: hidden;
         }
-      }
+        #tweaks-panel header {
+          display:flex; justify-content:space-between; align-items:center;
+          padding: 14px 16px; border-bottom: 1px solid oklch(0.92 0.006 250);
+        }
+        #tweaks-panel h3 { margin:0; font-size: 13px; font-weight:700; letter-spacing:0.08em; text-transform: uppercase; }
+        #tweaks-panel header .dot { width:8px; height:8px; border-radius:50%; background: oklch(0.62 0.15 30); display:inline-block; margin-right:8px; vertical-align: middle;}
+        #tweaks-panel .group { padding: 14px 16px; border-bottom: 1px solid oklch(0.94 0.006 250); }
+        #tweaks-panel .group:last-child { border-bottom:0; }
+        #tweaks-panel label { display:block; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: oklch(0.55 0.012 250); margin-bottom: 8px; }
+        #tweaks-panel .swatches { display:flex; gap: 8px; }
+        #tweaks-panel .swatches button {
+          flex:1; height: 32px; border-radius: 8px; border: 2px solid transparent;
+          cursor:pointer; padding:0; outline: none;
+        }
+        #tweaks-panel .swatches button.on { border-color: #1a1d24; }
+        #tweaks-panel .seg { display:flex; border: 1px solid oklch(0.9 0.006 250); border-radius: 8px; overflow:hidden; }
+        #tweaks-panel .seg button {
+          flex:1; height: 32px; border: 0; background: #fff; cursor:pointer; font: inherit; font-size: 12px;
+          border-right: 1px solid oklch(0.92 0.006 250);
+        }
+        #tweaks-panel .seg button:last-child { border-right: 0; }
+        #tweaks-panel .seg button.on { background: #1a1d24; color:#fff; }
+        #tweaks-panel input[type=range] { width: 100%; }
+        #tweaks-panel .row { display:flex; justify-content:space-between; align-items:center; }
+        #tweaks-panel .row .val { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: oklch(0.36 0.014 250); }
+      </style>
+      <header>
+        <h3><span class="dot"></span>Tweaks</h3>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:10px; color:oklch(0.55 0.012 250);">CheXVision</span>
+      </header>
+      <div class="group">
+        <label>Accent color</label>
+        <div class="swatches" data-key="accent">
+          <button data-v="coral"  style="background: oklch(0.62 0.15 30)"></button>
+          <button data-v="blue"   style="background: oklch(0.55 0.15 245)"></button>
+          <button data-v="green"  style="background: oklch(0.55 0.13 155)"></button>
+          <button data-v="violet" style="background: oklch(0.52 0.18 300)"></button>
+        </div>
+      </div>
+      <div class="group">
+        <label>Section dividers</label>
+        <div class="seg" data-key="sectionBg">
+          <button data-v="ink">Dark ink</button>
+          <button data-v="light">Light paper</button>
+        </div>
+      </div>
+      <div class="group">
+        <label>Presenter tags (P1/P2/P3)</label>
+        <div class="seg" data-key="presenterTags">
+          <button data-v="false">Hidden</button>
+          <button data-v="true">Show</button>
+        </div>
+      </div>
+      <div class="group">
+        <div class="row"><label style="margin:0;">Body type scale</label><span class="val" id="tweak-scale-val"></span></div>
+        <input type="range" id="tweak-scale" min="0.85" max="1.2" step="0.05"/>
+      </div>
+    `;
+    document.body.appendChild(panel);
 
-      * {
-        box-sizing: border-box;
-      }
+    function syncUI() {
+      panel.querySelectorAll('.swatches[data-key=accent] button').forEach(b => b.classList.toggle('on', b.dataset.v === state.accent));
+      panel.querySelectorAll('.seg[data-key=sectionBg] button').forEach(b => b.classList.toggle('on', b.dataset.v === state.sectionBg));
+      panel.querySelectorAll('.seg[data-key=presenterTags] button').forEach(b => b.classList.toggle('on', String(state.presenterTags) === b.dataset.v));
+      const r = panel.querySelector('#tweak-scale');
+      r.value = state.typeScale;
+      panel.querySelector('#tweak-scale-val').textContent = (state.typeScale).toFixed(2) + '×';
+    }
 
-      body {
-        min-height: 100vh;
-        margin: 0;
-        display: grid;
-        place-items: center;
-        background: var(--bg);
-        color: var(--text);
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        line-height: 1.5;
-      }
+    function commit(edits) {
+      Object.assign(state, edits);
+      applyAll(state);
+      syncUI();
+      try { window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*'); } catch(e) {}
+    }
 
-      main {
-        width: min(680px, calc(100vw - 32px));
-        padding: 32px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--panel);
-      }
+    panel.querySelectorAll('.swatches[data-key=accent] button').forEach(b => {
+      b.addEventListener('click', () => commit({ accent: b.dataset.v }));
+    });
+    panel.querySelectorAll('.seg[data-key=sectionBg] button').forEach(b => {
+      b.addEventListener('click', () => commit({ sectionBg: b.dataset.v }));
+    });
+    panel.querySelectorAll('.seg[data-key=presenterTags] button').forEach(b => {
+      b.addEventListener('click', () => commit({ presenterTags: b.dataset.v === 'true' }));
+    });
+    panel.querySelector('#tweak-scale').addEventListener('input', (e) => {
+      commit({ typeScale: parseFloat(e.target.value) });
+    });
 
-      h1 {
-        margin: 0 0 12px;
-        font-size: clamp(1.75rem, 4vw, 2.5rem);
-        line-height: 1.1;
-      }
+    syncUI();
+  }
 
-      p {
-        margin: 0 0 16px;
-        color: var(--muted);
-      }
+  // Register listener BEFORE announcing availability
+  window.addEventListener('message', (ev) => {
+    const d = ev.data;
+    if (!d || !d.type) return;
+    if (d.type === '__activate_edit_mode') {
+      if (!panel) buildPanel();
+      if (panel) panel.style.display = 'block';
+    } else if (d.type === '__deactivate_edit_mode') {
+      if (panel) panel.style.display = 'none';
+    }
+  });
 
-      code {
-        color: var(--text);
-        font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-        font-size: 0.95em;
-      }
-
-      a {
-        color: var(--accent);
-        font-weight: 700;
-      }
-    </style>
-    <script>
-      const deckPath = "CheXVision%20Deck.html";
-
-      fetch(deckPath, { method: "HEAD", cache: "no-store" })
-        .then((response) => {
-          if (response.ok) {
-            window.location.replace(deckPath);
-          }
-        })
-        .catch(() => {});
-    </script>
-  </head>
-  <body>
-    <main>
-      <h1>CheXVision Deck</h1>
-      <p>
-        GitHub Pages is ready. Add <code>CheXVision Deck.html</code>, <code>deck-stage.js</code>,
-        and <code>assets/</code> beside this file, then this page will open the deck automatically.
-      </p>
-      <p><a href="CheXVision%20Deck.html">Open deck</a></p>
-    </main>
-  </body>
+  try { window.parent.postMessage({ type: '__edit_mode_available' }, '*'); } catch(e) {}
+})();
+</script>
+</body>
 </html>
