@@ -104,21 +104,6 @@
 
   /* Title slide */
   .title-slide { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
-  .hero-logo {
-    width: 96px;
-    height: 96px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 24px;
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    background: var(--panel);
-    box-shadow: 0 18px 42px rgba(31, 35, 40, 0.08);
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-    font-size: 58px;
-    line-height: 1;
-  }
   .title-hero { font-size: 168px; font-weight: 800; letter-spacing: -0.04em; line-height: 0.92; }
   .title-hero .accent { color: var(--accent-h, var(--blue)); }
   .title-sub { font-size: 28px; color: var(--ink-soft); line-height: 1.35; max-width: 1400px; margin-top: 28px; font-weight: 400; }
@@ -176,7 +161,6 @@
       </div>
 
       <div>
-        <div class="hero-logo" aria-label="X-ray logo">🩻</div>
         <div class="eyebrow">Large-Scale Chest X-Ray Pathology Detection</div>
         <div class="title-hero">CheX<span class="accent">Vision</span>.</div>
         <div class="title-sub">Comparing a custom SE-ResNet trained from scratch against a DenseNet-121 transfer-learning pipeline on 112,120 NIH chest X-rays — under identical evaluation conditions.</div>
