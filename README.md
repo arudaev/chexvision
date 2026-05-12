@@ -15,11 +15,22 @@ python_version: "3.10"
 **Large-Scale Chest X-Ray Pathology Detection** — Deep Learning & Big Data Project
 
 [![CI](https://github.com/arudaev/chexvision/actions/workflows/ci.yml/badge.svg)](https://github.com/arudaev/chexvision/actions/workflows/ci.yml)
+[![Deck](https://img.shields.io/badge/Slides-GitHub%20Pages-0f766e?logo=githubpages)](https://arudaev.github.io/chexvision/)
 [![Dataset](https://img.shields.io/badge/HF-Dataset-blue?logo=huggingface)](https://huggingface.co/datasets/arudaev/chest-xray-14-320)
 [![Demo](https://img.shields.io/badge/HF-Demo-orange?logo=huggingface)](https://huggingface.co/spaces/arudaev/chexvision-demo)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/framework-PyTorch-red.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+---
+
+## Project Resources
+
+- [Presentation deck](https://arudaev.github.io/chexvision/)
+- [Live demo](https://huggingface.co/spaces/arudaev/chexvision-demo)
+- [Dataset](https://huggingface.co/datasets/arudaev/chest-xray-14-320)
+- [Scratch model](https://huggingface.co/arudaev/chexvision-scratch)
+- [DenseNet model](https://huggingface.co/arudaev/chexvision-densenet)
 
 ---
 
@@ -288,6 +299,7 @@ All heavy compute runs in the cloud. Local machines are for editing and lightwei
 | Component | Platform | Notes |
 |-----------|----------|-------|
 | Source code | [GitHub](https://github.com/arudaev/chexvision) | CI on every push (lint, test, type check) |
+| Presentation deck | [GitHub Pages](https://arudaev.github.io/chexvision/) | Browser-based project presentation |
 | Dataset | [HF Dataset](https://huggingface.co/datasets/arudaev/chest-xray-14-320) | 36 Parquet shards · 320×320 · pinned revision |
 | Training | [Kaggle kernels](kaggle/) | Free T4 GPU; `dispatch.py` fully automates push |
 | Model (scratch) | [arudaev/chexvision-scratch](https://huggingface.co/arudaev/chexvision-scratch) | Auto-uploaded by kernel after training |
