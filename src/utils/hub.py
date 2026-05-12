@@ -15,6 +15,9 @@ HF_DATASET_REVISION = os.environ.get(
     "CHEXVISION_DATASET_REVISION",
     "44443e6ee968b3c6094b63f14a27698c40b50680",
 )
+PROJECT_REPO_URL = "https://github.com/arudaev/chexvision"
+PRESENTATION_DECK_URL = "https://arudaev.github.io/chexvision/"
+DEMO_SPACE_URL = "https://huggingface.co/spaces/arudaev/chexvision-demo"
 
 # NIH Chest X-ray14 pathology labels in canonical order
 PATHOLOGY_LABELS = [
@@ -401,6 +404,13 @@ datasets:
 > 14-class chest X-ray pathology detection + binary normal/abnormal classification
 > on the NIH Chest X-ray14 dataset (112,120 images).
 
+## Project Resources
+
+- [GitHub repository]({PROJECT_REPO_URL})
+- [Presentation deck]({PRESENTATION_DECK_URL})
+- [Live demo]({DEMO_SPACE_URL})
+- [Dataset](https://huggingface.co/datasets/{dataset_repo})
+
 ## Architecture
 
 {arch_diagram}
@@ -442,7 +452,8 @@ It outputs two predictions per image:
 CheXNet (Rajpurkar et al., 2017) — the seminal paper establishing DenseNet-121 for chest X-ray
 classification — reported **0.841 macro AUC-ROC** on a comparable split of this dataset.
 CheXVision-DenseNet matches this benchmark. See the
-[CheXVision demo](https://huggingface.co/spaces/arudaev/chexvision-demo) for live inference.
+[CheXVision demo]({DEMO_SPACE_URL}) for live inference, or the
+[presentation deck]({PRESENTATION_DECK_URL}) for the project walkthrough.
 
 ## Citation
 
