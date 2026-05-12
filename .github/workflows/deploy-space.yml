@@ -25,5 +25,9 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
           git remote add hf https://arudaev:${HF_TOKEN}@huggingface.co/spaces/arudaev/chexvision-demo || true
-          git push hf main --force
+          git rm -r --cached docs/ scripts/ tests/ kaggle/ configs/ 2>/dev/null || true
+          git commit -m "ci: strip non-app dirs for HF Space" --allow-empty
+          git push hf HEAD:main --force
