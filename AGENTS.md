@@ -1,4 +1,6 @@
-# CheXVision — Codex Development Guide
+# CheXVision — Development Guide
+
+> Canonical agent guide for this repo. Read by Codex, Claude Code (via `@AGENTS.md` in `CLAUDE.md`), and any other tool that loads `AGENTS.md`. Edit **this** file — `CLAUDE.md` is just a pointer.
 
 ## Project Overview
 
@@ -85,7 +87,7 @@ tests/                          # pytest unit tests (51 tests across 9 modules)
 - **Reproducibility**: seed `torch`, `numpy`, `random`, and CUDA in every training run
 - **Docstrings**: Google style on public classes/functions only
 - **No notebooks** — all logic lives in `src/` or `scripts/`
-- **No Co-Authored-By** — never add `Co-Authored-By: Codex` trailers to commit messages or PR descriptions
+- **No Co-Authored-By** — never add `Co-Authored-By:` trailers for any AI agent (Claude, Codex, etc.) to commit messages or PR descriptions
 
 ---
 
