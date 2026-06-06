@@ -1,0 +1,351 @@
+/* ============================================================
+   CheXVision — two-column project-report paper
+   A4, publication layout. Serif body (STIX Two Text) for an
+   ideal ~50-char measure; Inter for headings / tables / labels
+   (ties to the figures); JetBrains Mono for code. Slate-blue +
+   coral accents borrowed from the figures.
+   ============================================================ */
+
+:root{
+  --ink:#1b1f27;
+  --body:#23272f;
+  --mut:#5c636f;
+  --mut2:#878d99;
+  --hair:#d3d8e0;
+  --hairsoft:#e6e9ef;
+  --blue:#2f6fd6;
+  --blueDk:#214f96;
+  --coral:#c4582f;
+  --soft:#f4f7fb;
+  --softer:#fafbfd;
+  --paper:#ffffff;
+}
+
+*{ box-sizing:border-box; }
+
+html{
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+
+body{
+  margin:0;
+  background:#eceff3;
+  font-family:"STIX Two Text", Georgia, serif;
+  color:var(--body);
+  font-size:9.8pt;
+  line-height:1.48;
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- page frame ---------- */
+.page{
+  position:relative;
+  width:210mm;
+  height:297mm;
+  margin:0 auto 9mm;
+  padding:15mm 15mm 13mm;
+  background:var(--paper);
+  box-shadow:0 1px 3px rgba(20,30,50,.10), 0 10px 34px rgba(20,30,50,.10);
+  overflow:hidden;
+}
+
+/* the two-column flow region for a page */
+.cols{
+  column-count:2;
+  column-gap:7mm;
+  column-fill:auto;
+  height:100%;
+}
+/* pages whose columns should balance (last page, short pages) */
+.cols.balance{ column-fill:balance; }
+
+/* full-width band inside a column flow (title, wide figures/tables) */
+.span{
+  column-span:all;
+  -webkit-column-span:all;
+}
+
+/* ---------- running foot ---------- */
+.foot{
+  position:absolute;
+  left:15mm; right:15mm; bottom:7mm;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-family:"Inter", sans-serif;
+  font-size:7.2pt;
+  letter-spacing:.3px;
+  color:var(--mut2);
+  border-top:.5pt solid var(--hairsoft);
+  padding-top:3pt;
+}
+.foot .pg{ font-variant-numeric:tabular-nums; }
+
+/* ---------- title block ---------- */
+.titleblock{
+  text-align:center;
+  padding:0 6mm 0;
+  margin-bottom:1.5mm;
+}
+.kicker{
+  font-family:"Inter", sans-serif;
+  font-size:8pt;
+  font-weight:600;
+  letter-spacing:2.4px;
+  text-transform:uppercase;
+  color:var(--blueDk);
+  margin-bottom:6pt;
+}
+.title{
+  font-family:"STIX Two Text", Georgia, serif;
+  font-weight:700;
+  font-size:23pt;
+  line-height:1.06;
+  letter-spacing:-.01em;
+  color:var(--ink);
+  margin:0 0 5pt;
+}
+.subtitle{
+  font-family:"STIX Two Text", Georgia, serif;
+  font-weight:400;
+  font-style:italic;
+  font-size:11.5pt;
+  line-height:1.28;
+  color:var(--mut);
+  margin:0 auto;
+  max-width:150mm;
+}
+.authors{
+  font-family:"Inter", sans-serif;
+  font-size:10pt;
+  font-weight:500;
+  color:var(--ink);
+  margin-top:9pt;
+  letter-spacing:.1px;
+}
+.affil{
+  font-family:"Inter", sans-serif;
+  font-size:8.4pt;
+  color:var(--mut);
+  margin-top:4pt;
+}
+.links{
+  font-family:"JetBrains Mono", monospace;
+  font-size:7.8pt;
+  color:var(--blueDk);
+  margin-top:6pt;
+  letter-spacing:.1px;
+}
+.titlerule{
+  width:100%;
+  height:1.4pt;
+  background:linear-gradient(90deg, var(--blueDk), var(--blue));
+  margin:7pt auto 0;
+  border-radius:2px;
+}
+
+/* ---------- abstract (full width) ---------- */
+.abstract{
+  padding:0 8mm;
+  margin:0 0 1mm;
+}
+.abstract .lead{
+  font-family:"Inter", sans-serif;
+  font-size:9pt;
+  font-weight:700;
+  letter-spacing:1.6px;
+  text-transform:uppercase;
+  color:var(--blueDk);
+  text-align:center;
+  margin-bottom:4pt;
+}
+.abstract p{
+  text-align:justify;
+  hyphens:auto;
+  margin:0;
+  font-size:9.3pt;
+  line-height:1.44;
+}
+.abstract .hair{ border:0; border-top:.5pt solid var(--hair); margin:3pt 0 0; }
+
+/* ---------- headings ---------- */
+h2.sec{
+  font-family:"Inter", sans-serif;
+  font-size:11pt;
+  font-weight:700;
+  color:var(--ink);
+  letter-spacing:-.005em;
+  margin:11pt 0 5pt;
+  padding-bottom:3pt;
+  border-bottom:.8pt solid var(--hair);
+  break-after:avoid;
+}
+h2.sec .n{ color:var(--blue); margin-right:5pt; font-variant-numeric:tabular-nums; }
+h2.sec:first-child, .cols > h2.sec:first-child{ margin-top:0; }
+
+h3.sub{
+  font-family:"Inter", sans-serif;
+  font-size:9.5pt;
+  font-weight:650;
+  color:var(--blueDk);
+  margin:9pt 0 3pt;
+  break-after:avoid;
+}
+h3.sub .n{ color:var(--mut2); margin-right:4pt; font-weight:600; }
+
+h4.subsub{
+  font-family:"Inter", sans-serif;
+  font-size:9pt;
+  font-weight:600;
+  color:var(--ink);
+  margin:7pt 0 2pt;
+  break-after:avoid;
+}
+
+/* ---------- body text ---------- */
+p{
+  margin:0 0 6.5pt;
+  text-align:justify;
+  hyphens:auto;
+  -webkit-hyphens:auto;
+}
+p + p{ text-indent:0; }
+.lead-para{ }
+
+ul, ol{ margin:3pt 0 6pt; padding-left:13pt; }
+li{ margin:0 0 4.5pt; text-align:justify; hyphens:auto; }
+li::marker{ color:var(--blue); }
+
+b, strong{ color:var(--ink); font-weight:700; }
+i, em{ }
+
+code{
+  font-family:"JetBrains Mono", monospace;
+  font-size:8.1pt;
+  background:var(--soft);
+  color:var(--blueDk);
+  padding:.4pt 3pt;
+  border-radius:3px;
+  white-space:nowrap;
+}
+
+a{ color:var(--blueDk); text-decoration:none; }
+
+.small{ font-size:8pt; color:var(--mut); }
+.muted{ color:var(--mut); }
+
+/* ---------- figures ---------- */
+figure{
+  margin:7pt 0 8pt;
+  text-align:center;
+  break-inside:avoid;
+}
+figure.span{ margin:12pt 0 14pt; }
+figure img{
+  width:100%;
+  height:auto;
+  display:block;
+  border:.5pt solid var(--hairsoft);
+  border-radius:5px;
+  background:#fff;
+}
+figure.framed img{ padding:6pt; }
+figcaption{
+  font-family:"Inter", sans-serif;
+  font-size:7.9pt;
+  line-height:1.4;
+  color:var(--mut);
+  margin-top:6pt;
+  margin-bottom:5pt;
+  text-align:left;
+  max-width:none;
+}
+figcaption .lab{ color:var(--ink); font-weight:700; }
+
+/* sized figures (single column placement) */
+figure.col img{ }
+
+/* ---------- tables ---------- */
+table{
+  border-collapse:collapse;
+  width:100%;
+  margin:3pt 0 8pt;
+  font-family:"Inter", sans-serif;
+  font-size:8.3pt;
+  line-height:1.36;
+}
+/* tables tagged .nb stay whole (never split across a column/page) */
+table.nb{
+  break-inside:avoid;
+  -webkit-column-break-inside:avoid;
+  page-break-inside:avoid;
+}
+/* always keep a header with its first rows, and never split a single row */
+thead{ break-after:avoid; }
+tr{ break-inside:avoid; -webkit-column-break-inside:avoid; }
+caption{
+  caption-side:top;
+  text-align:left;
+  font-family:"Inter", sans-serif;
+  font-style:normal;
+  font-size:7.9pt;
+  line-height:1.4;
+  color:var(--mut);
+  margin-bottom:6pt;
+  padding-bottom:1pt;
+}
+caption .lab{ color:var(--ink); font-weight:700; }
+thead th{
+  background:var(--blueDk);
+  color:#fff;
+  font-weight:600;
+  text-align:left;
+  padding:4.5pt 6pt;
+  border:.5pt solid var(--blueDk);
+  vertical-align:bottom;
+}
+tbody td{
+  padding:4pt 6pt;
+  border:.5pt solid var(--hair);
+  vertical-align:top;
+  color:var(--body);
+}
+tbody tr:nth-child(even) td{ background:var(--softer); }
+.num{ text-align:right; font-variant-numeric:tabular-nums; }
+td b{ color:var(--ink); }
+.tbl-tight thead th{ padding:3.6pt 6pt; }
+.tbl-tight tbody td{ padding:3.2pt 6pt; }
+td .pos{ color:var(--coral); font-weight:600; }
+td code, caption code{ font-size:7.6pt; white-space:normal; word-break:break-word; }
+
+/* references */
+ol.refs{ padding-left:14pt; font-size:8.5pt; line-height:1.4; }
+ol.refs li{ margin-bottom:4pt; text-align:left; }
+ol.refs li::marker{ color:var(--mut); font-variant-numeric:tabular-nums; }
+
+.acks{ font-size:8.4pt; color:var(--mut); }
+
+footer.note{
+  font-family:"Inter", sans-serif;
+  font-size:7.4pt;
+  color:var(--mut);
+  border-top:.5pt solid var(--hair);
+  margin-top:8pt;
+  padding-top:5pt;
+  line-height:1.45;
+}
+
+/* ---------- print ---------- */
+@page{ size:A4; margin:0; }
+@media print{
+  body{ background:#fff; }
+  .page{
+    margin:0;
+    box-shadow:none;
+    page-break-after:always;
+    break-after:page;
+  }
+  .page:last-child{ page-break-after:auto; }
+}

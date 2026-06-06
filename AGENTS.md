@@ -52,6 +52,26 @@ configs/
 app/
 └── app.py                      # Streamlit demo — hf_hub_download for checkpoints
 
+docs/                           # GitHub Pages site (arudaev.github.io/chexvision)
+├── index.html                  # Presentation deck (deck-stage.js slide player)
+├── deck-stage.js               # Custom web-component slide player
+├── report.html                 # 10-page project report (standalone HTML)
+├── report.css                  # Report stylesheet
+├── report/
+│   └── report.html             # Earlier report draft (kept for reference)
+├── figures/                    # JS-drawn SVG figure sources
+│   ├── figlib.js               # Shared drawing primitives
+│   ├── fig1_pipeline.js        # Fig 1 — end-to-end pipeline
+│   ├── fig2_seresnet.js        # Fig 2 — SE-ResNet architecture
+│   ├── fig3_densenet.js        # Fig 3 — DenseNet-121 architecture
+│   ├── fig4_finetune.js        # Fig 4 — two-phase fine-tuning schedule
+│   └── figures.html            # Viewer/exporter for the JS figures
+└── assets/                     # Pre-rendered PNGs and SVGs embedded in the report
+    ├── CheXVision_Fig1_pipeline.{png,svg}
+    ├── CheXVision_Fig2_SE-ResNet.{png,svg}
+    ├── CheXVision_Fig3_DenseNet-121.{png,svg}
+    └── CheXVision_Fig4_two-phase-finetuning.{png,svg}
+
 tests/                          # pytest unit tests (51 tests across 9 modules)
 ├── test_dataset.py
 ├── test_metrics.py
