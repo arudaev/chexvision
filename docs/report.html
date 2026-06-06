@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CheXVision — Project Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+
+<!-- ============================== PAGE 1 ============================== -->
+<section class="page" data-screen-label="p1">
+  <div class="cols">
+
+    <div class="titleblock span">
+      <div class="kicker">Deep Learning &amp; Big Data · AIN Program</div>
+      <h1 class="title">CheXVision</h1>
+      <div class="subtitle">Large-scale chest X-ray pathology classification with a custom CNN and DenseNet-121 transfer learning</div>
+      <div class="authors">Alexander Rudaev · Sameer Kumar · Huraira Ali · Fares Elbermawy</div>
+      <div class="affil">Deep Learning and Big Data, AIN Program · Dataset: NIH ChestX-ray14 (112,120 images, 14 labels)</div>
+      <div class="links">github.com/arudaev/chexvision&nbsp;&nbsp;·&nbsp;&nbsp;huggingface.co/spaces/arudaev/chexvision-demo</div>
+      <div class="titlerule"></div>
+    </div>
+
+    <div class="abstract span">
+      <div class="lead">Abstract</div>
+      <p>Chest radiography is among the most common diagnostic imaging exams worldwide, yet expert interpretation remains slow, costly, and unevenly available. The NIH ChestX-ray14 database — 112,120 frontal radiographs from 30,805 patients, each weakly labelled with up to fourteen thoracic pathologies mined from radiology reports — makes it possible to study image-level pathology classification at hospital scale. We implement and compare two convolutional networks under a single fixed protocol: a residual CNN with Squeeze-and-Excitation attention trained entirely from scratch, and a DenseNet-121 adapted from ImageNet by transfer learning, following the CheXNet design. Both share one backbone and two output heads, so a single forward pass yields a fourteen-class multi-label prediction and a binary Normal/Abnormal decision. On the held-out validation split the transfer-learned DenseNet reaches a macro-averaged AUC-ROC of 0.846, marginally above the published CheXNet benchmark of 0.841, while the from-scratch network reaches 0.801 with no pretrained weights. We report per-class results, examine where the models agree and differ, and discuss the data, modelling, and infrastructure limits that bound them. All training runs on free cloud GPUs from a reproducible, tested, continuously integrated code base. The results are encouraging, but fully automated classification of chest radiographs from weakly supervised, report-mined labels remains hard.</p>
+      <hr class="hair">
+    </div>
+
+    <h2 class="sec span"><span class="n">1</span>Introduction</h2>
+    <p>Deep convolutional networks trained on large annotated image collections have driven substantial gains in recognition, detection, and segmentation. Medical imaging has begun to benefit from the same paradigm, but it poses extra difficulties: pathological findings are often small and low-contrast relative to the full image, expert annotation is expensive, and ground-truth labels are frequently mined from free-text reports rather than verified by region-level markup.</p>
+    <p>Chest radiography is a natural testbed. It is the most common imaging exam in clinical practice, and a system that flags likely pathologies and separates normal from abnormal films would help radiologists prioritise their reading lists and extend basic screening to settings without specialist coverage. This motivation underlies the NIH ChestX-ray14 release (Wang et al., 2017) and the subsequent CheXNet result (Rajpurkar et al., 2017), which reported radiologist-level pneumonia detection and established DenseNet-121 as the reference architecture for this database.</p>
+    <p>The course brief requires two models on a shared dataset — one trained <i>from scratch</i> and one built with an alternative paradigm (transfer learning) — together with an explicit quantitative comparison. We frame the problem as two complementary supervised tasks on the same images. In the <b>multi-label</b> task the network predicts an independent probability for each of the fourteen pathologies; the labels are not mutually exclusive, so a single film may simultaneously show Effusion, Infiltration, and Atelectasis. This is the harder, clinically richer task and our primary evaluation target. In the <b>binary</b> task the network predicts a single Normal-versus-Abnormal score indicating whether any finding is present — the screening task, and a useful auxiliary signal on the shared features.</p>
+    <p>Both tasks are solved by one network with two heads on a shared backbone, so a single forward pass produces both predictions. This keeps the architecture comparison controlled: only the backbone changes, while task formulation, loss, data, and evaluation are held fixed. Throughout, we adopt the area under the ROC curve, macro-averaged over the fourteen pathologies, as the primary metric. AUC-ROC is threshold-independent and robust to severe class imbalance, and it is the measure reported by prior work on ChestX-ray14. Accuracy would be uninformative: a classifier that always predicts the absence of the rarest pathology, Hernia (prevalence well below 1%), scores over 99% accuracy on that class while detecting nothing of clinical value.</p>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">1</span></div>
+</section>
+
+<!-- ============================== PAGE 2 ============================== -->
+<section class="page" data-screen-label="p2">
+  <div class="cols">
+
+    <h2 class="sec span"><span class="n">2</span>Dataset and Big-Data Engineering</h2>
+    <p>We use NIH ChestX-ray14 (Wang et al., 2017), one of the largest publicly available labelled chest X-ray collections: 112,120 frontal-view images from 30,805 unique patients, each tagged with zero or more of fourteen pathology labels mined from radiology reports by natural language processing. The labels are Atelectasis, Cardiomegaly, Effusion, Infiltration, Mass, Nodule, Pneumonia, Pneumothorax, Consolidation, Edema, Emphysema, Fibrosis, Pleural Thickening, and Hernia. Images with none of these findings are labelled "No Finding".</p>
+
+    <h3 class="sub"><span class="n">2.1</span>Data partition</h3>
+    <p>We shuffle the database once into a fixed 70/10/20 partition for training, validation, and testing, and store the assignment alongside the images so it is identical across every run and every model. The partition is frozen for reproducibility, and the test split is withheld from all model selection. Table 1 summarises the splits.</p>
+
+    <table class="tbl-tight">
+      <caption><span class="lab">Table 1.</span> Image counts for the fixed 70/10/20 partition of NIH ChestX-ray14.</caption>
+      <thead><tr><th>Split</th><th class="num">Images</th><th class="num">Share</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td>Train</td><td class="num">78,468</td><td class="num">70%</td><td>Parameter learning</td></tr>
+        <tr><td>Validation</td><td class="num">11,210</td><td class="num">10%</td><td>Early stopping, selection, reported numbers</td></tr>
+        <tr><td>Test</td><td class="num">22,442</td><td class="num">20%</td><td>Held out for final evaluation</td></tr>
+        <tr><td><b>Total</b></td><td class="num"><b>112,120</b></td><td class="num">100%</td><td></td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub"><span class="n">2.2</span>Class imbalance</h3>
+    <p>The dataset is severely imbalanced in two respects. First, roughly 54% of all images carry no finding, so the binary task is close to balanced (about 46% abnormal) while the multi-label task is dominated by negatives. Second, prevalence across the fourteen pathologies spans more than two orders of magnitude: Infiltration and Effusion are common, whereas Hernia appears in well under 1% of films. Left unaddressed, a network minimises its loss most easily by predicting "absent" for every rare class.</p>
+    <p>We counteract this directly with per-class positive weighting in the loss (Section 3.2). For each pathology we compute <code>pos_weight = neg / pos</code> on the training split and pass it to a numerically stable <code>BCEWithLogitsLoss</code>. For the rarest class the positive weight reaches roughly 500, so a single missed Hernia contributes about as much to the loss as 500 missed Effusions. This is the single most important choice for non-trivial performance on the rare tail.</p>
+
+    <h3 class="sub"><span class="n">2.3</span>A pre-resized 320×320 dataset</h3>
+    <p>The raw NIH release is about 45 GB of 1024×1024 PNGs — too large to stream efficiently from free cloud GPUs within a practical time budget. We therefore built a one-time preprocessing pipeline, run as a Kaggle kernel, that decodes the raw archives, resizes every image to 320×320 RGB, and writes 36 Parquet shards totalling about 7.97 GB, published as a versioned Hugging Face dataset (<code>arudaev/chest-xray-14-320</code>). The dataset revision hash is pinned in source, so every run reads byte-identical data. We keep 320×320 rather than the common 224-pixel baseline because chest pathology often hinges on small, low-contrast findings such as nodules and fine infiltrates; the higher resolution preserves that detail, at the cost of a smaller batch size to fit GPU memory.</p>
+
+    <figure class="span framed">
+      <img src="assets/CheXVision_Fig1_pipeline.png" alt="End-to-end data and training pipeline">
+      <figcaption><span class="lab">Figure 1.</span> The end-to-end pipeline. <b>Top lane:</b> the one-time data build and per-run input pipeline, from the pinned 320×320 Hugging Face dataset through the deterministic split and the augmentation stack. <b>Bottom lane:</b> the per-epoch training loop, from the dual-head forward pass through the combined weighted-BCE loss, gradient accumulation, and best-checkpoint upload to the model hub.</figcaption>
+    </figure>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">2</span></div>
+</section>
+
+<!-- ============================== PAGE 3 ============================== -->
+<section class="page" data-screen-label="p3">
+  <div class="cols">
+
+    <h2 class="sec span"><span class="n">3</span>Methodology</h2>
+    <h3 class="sub"><span class="n">3.1</span>Dual-head, single-backbone design</h3>
+    <p>Both models share an identical output design. A shared backbone extracts a feature vector once, and two small linear heads read from it: a multi-label head producing fourteen logits with an independent sigmoid per pathology, and a binary head producing a single Normal-versus-Abnormal logit. This choice is deliberate. Computing both tasks from shared features is cheaper than training two separate networks; the binary task acts as an auxiliary signal that regularises the shared representation; and, most importantly for the comparison, it isolates the variable under study. When we compare the from-scratch model against the DenseNet, only the backbone differs — heads, loss, data, and evaluation are held constant.</p>
+
+    <h3 class="sub"><span class="n">3.2</span>Training procedure</h3>
+    <p>Every component below is implemented in raw PyTorch, without a high-level training framework, so each decision is explicit and defensible. The settings are shared by both models except where Section 4.3 notes the two-phase schedule specific to the DenseNet.</p>
+
+    <table class="tbl-tight">
+      <caption><span class="lab">Table 2.</span> Shared training configuration and the rationale for each choice.</caption>
+      <thead><tr><th style="width:27%">Component</th><th>Choice and justification</th></tr></thead>
+      <tbody>
+        <tr><td>Loss</td><td>Combined <code>BCEWithLogitsLoss</code>, <code>1.0×</code> multi-label + <code>0.5×</code> binary. The fused sigmoid+BCE is numerically stable; the binary task is down-weighted so it supports rather than dominates the harder multi-label objective.</td></tr>
+        <tr><td>Class balancing</td><td>Per-class <code>pos_weight</code> on the multi-label loss, from training-split prevalence, to counteract the long tail (§2.2). The binary head uses plain BCE, being near-balanced.</td></tr>
+        <tr><td>Optimizer</td><td>AdamW with decoupled weight decay 1e-4 — Adam-family convergence with proper regularisation; a standard choice for modern vision fine-tuning.</td></tr>
+        <tr><td>LR schedule</td><td>Cosine annealing over the full epoch budget with a short warm-up, decaying smoothly towards zero for a stable final solution.</td></tr>
+        <tr><td>Mixed precision</td><td>fp16 forward/backward with fp32 master weights: ~1.7× faster on T4/P100 and roughly half the memory, which makes 320-pixel training feasible in the free nine-hour Kaggle window.</td></tr>
+        <tr><td>Grad. accumulation</td><td>Physical batch 24 over four steps gives an effective batch of 96, recovering large-batch stability despite 320-pixel memory cost.</td></tr>
+        <tr><td>Grad. clipping</td><td>Global-norm clipping at 1.0, to stop the weighted, imbalanced loss from producing occasional exploding updates on rare-class batches.</td></tr>
+        <tr><td>Reproducibility</td><td>One seed (42) across Python, NumPy, PyTorch, CUDA, with deterministic cuDNN. With the pinned dataset and frozen split, runs repeat.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub"><span class="n">3.3</span>Data augmentation</h3>
+    <p>Augmentation is chosen to reflect plausible radiographic variation rather than generic image noise; each transform maps to a real source of acquisition variation, as detailed below.</p>
+
+    <table class="tbl-tight">
+      <caption><span class="lab">Table 3.</span> Augmentations applied during training and their anatomical or acquisition rationale.</caption>
+      <thead><tr><th style="width:38%">Augmentation</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td>Horizontal flip</td><td>Chest anatomy is broadly bilateral, so a mirrored film is still plausible.</td></tr>
+        <tr><td>Rotation (±15°)</td><td>Patients are rarely aligned perfectly to the detector.</td></tr>
+        <tr><td>Affine translate / shear</td><td>Simulates positioning shifts and beam-angle variation.</td></tr>
+        <tr><td>Colour jitter</td><td>Compensates for exposure differences between machines.</td></tr>
+        <tr><td>Gaussian blur (p=0.2)</td><td>Models varying sharpness from motion or detector resolution.</td></tr>
+        <tr><td>Random erasing (p=0.1)</td><td>Mimics radio-opaque artefacts (leads, clips, implants) and discourages reliance on one region.</td></tr>
+        <tr><td>ImageNet norm</td><td>Required by the pretrained DenseNet; applied to both models so inputs match.</td></tr>
+      </tbody>
+    </table>
+    <p>The code base also implements two optional, config-driven enhancements. CLAHE performs local contrast enhancement in LAB space to expose low-contrast findings, and label smoothing (ε=0.1) regularises against the noisy, report-mined labels. As reported in Section 5.3, the final DenseNet checkpoint used both, whereas the from-scratch checkpoint predates them — we state this explicitly rather than conceal it, and closing the gap is the first item of future work.</p>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">3</span></div>
+</section>
+
+<!-- ============================== PAGE 4 ============================== -->
+<section class="page" data-screen-label="p4">
+  <div class="cols">
+
+    <h2 class="sec span"><span class="n">4</span>Models</h2>
+
+    <h3 class="sub"><span class="n">4.1</span>Model 1 — custom residual CNN, from scratch</h3>
+    <p>The first model is a residual convolutional network built and trained entirely from scratch, with no pretrained weights of any kind. Its architecture follows ResNet-50-equivalent depth and adds Squeeze-and-Excitation channel attention; it holds roughly 23 million parameters, all learned on chest X-rays alone.</p>
+
+    <figure class="span framed">
+      <img src="assets/CheXVision_Fig2_SE-ResNet.png" alt="Custom SE-ResNet architecture">
+      <figcaption><span class="lab">Figure 2.</span> The custom SE-ResNet. A 7×7 stem downsamples the input; four residual stages (depths 3-4-6-3, widths 64-128-256-512) progressively halve spatial resolution while doubling channels; a global average pool feeds the shared 512-dimensional vector to the two task heads. <b>Inset:</b> the SE residual block, where channel attention recalibrates features after every convolution.</figcaption>
+    </figure>
+
+    <p>The stem applies a 7×7 convolution at stride 2 followed by batch normalization, ReLU, and 3×3 max-pooling, capturing low-level edges and textures while reducing resolution fourfold. Four residual stages of depth [3, 4, 6, 3] follow. We chose ResNet-50 depth over a lighter [2,2,2,2] (ResNet-18) baseline because classifying fourteen simultaneous, often co-occurring signals needs more representational capacity, and the extra depth (about 23M against 11M parameters) is capacity worth its training cost. Each residual block is two 3×3 convolutions with a skip connection; the residual paths give gradients a short route and are what make a network this deep trainable at all, while batch normalization on every convolution stabilises training and permits a higher learning rate.</p>
+    <p>After each block, a Squeeze-and-Excitation module global-average-pools the feature map to a per-channel descriptor, learns per-channel importance through a small two-layer bottleneck with a sigmoid gate, and rescales the channels — channel-wise feature selection. A global average pool with dropout (0.5) then collapses the spatial dimensions without learned parameters, far less prone to overfitting than a large flatten-and-dense layer, and the dual heads (Linear 512→14 and Linear 512→1) read from the pooled vector. Convolutions use Kaiming (He) initialisation for the ReLU stack and the linear heads use Xavier; correct variance scaling is essential when training a deep network from random weights.</p>
+    <p>SE attention suits this problem well. Different pathologies activate different channels — the texture that signals Emphysema is not the one that signals Cardiomegaly. SE modules let the network amplify disease-relevant channels and suppress background channels per image, the kind of channel competition multi-label medical imaging creates, at negligible parameter cost (Hu et al., 2018). Training 23 million parameters from random initialisation on a noisy, imbalanced dataset is genuinely demanding — the network must learn edges, textures, and anatomy before disease, with no head start from natural-image pretraining. In return it provides a clean baseline against which the value of ImageNet transfer can be measured precisely (Section 5).</p>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">4</span></div>
+</section>
+
+<!-- ============================== PAGE 5 ============================== -->
+<section class="page" data-screen-label="p5">
+  <div class="cols">
+
+    <h3 class="sub"><span class="n">4.2</span>Model 2 — DenseNet-121 transfer learning</h3>
+    <p>The second model is a DenseNet-121 pretrained on ImageNet and fine-tuned for our two tasks — the transfer-learning paradigm required by the brief, following the CheXNet design (Rajpurkar et al., 2017).</p>
+
+    <figure class="span framed">
+      <img src="assets/CheXVision_Fig3_DenseNet-121.png" alt="DenseNet-121 transfer-learning architecture">
+      <figcaption><span class="lab">Figure 3.</span> The DenseNet-121 model. The ImageNet-pretrained dense backbone, with its strong feature reuse, feeds a 1024-dimensional pooled vector into a shared feature layer (Linear 1024→512, ReLU, dropout 0.3), followed by the same two task heads used by Model 1. <b>Inset:</b> dense connectivity — every layer receives the concatenated maps of all preceding layers (growth k = 32).</figcaption>
+    </figure>
+
+    <p>Three properties motivate this choice. <b>Dense connectivity</b> maximises feature reuse, strengthens gradient flow, and reaches strong accuracy with fewer parameters than a comparable ResNet — well suited to a free-GPU budget. <b>ImageNet pretraining</b> transfers well: low-level edges, gradients, and texture detectors are domain-agnostic, letting the network adapt to radiographic structure rather than relearn vision from scratch. Finally, the backbone is <b>proven on this exact data</b>: CheXNet reported a macro AUC-ROC of 0.841 with a single-head DenseNet-121, giving a literature-anchored target.</p>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">5</span></div>
+</section>
+
+<!-- ============================== PAGE 6 ============================== -->
+<section class="page" data-screen-label="p6">
+  <div class="cols">
+
+    <h3 class="sub"><span class="n">4.3</span>Two-phase fine-tuning</h3>
+    <p>Fine-tuning a pretrained backbone with freshly initialised heads is delicate: the large early gradients from random heads can wash out, or catastrophically forget, the valuable ImageNet features. We avoid this with a two-phase schedule. In phase 1 (epochs 1–5) the backbone is frozen and only the feature layer and two heads are trained, at a learning rate of 1e-3, so the heads learn to read the fixed features without disturbing them. In phase 2 (from epoch 6) all layers are unfrozen at a tenfold lower 1e-4, letting the backbone gently specialise its mid- and high-level features to chest-X-ray textures without destroying what pretraining provided. This is the main reason the model converges quickly: its best validation checkpoint is at epoch 18, far earlier than the from-scratch model's epoch 60, because it starts from a strong initialisation rather than random noise.</p>
+
+    <figure class="span framed">
+      <img src="assets/CheXVision_Fig4_two-phase-finetuning.png" alt="Two-phase fine-tuning schedule">
+      <figcaption><span class="lab">Figure 4.</span> The two-phase fine-tuning schedule. Phase 1 freezes the backbone and trains only the new heads at lr = 1e-3; phase 2 (from epoch 6) unfreezes the whole network at the tenfold lower lr = 1e-4, cosine-annealed to zero, for gentle end-to-end domain adaptation. The best validation checkpoint lands at epoch 18.</figcaption>
+    </figure>
+
+    <h2 class="sec span"><span class="n">5</span>Experiments and Results</h2>
+    <p>All numbers below are measured on the held-out validation split at each model's best checkpoint, selected by macro AUC-ROC. The multi-label task is evaluated with per-class and macro AUC-ROC, the binary task with AUC-ROC and F1.</p>
+
+    <h3 class="sub"><span class="n">5.1</span>Overall comparison</h3>
+    <p>Table 4 reports the headline metrics. The transfer-learned DenseNet is higher on every metric, reaching a macro AUC-ROC of 0.846 against 0.801 for the from-scratch network — a gain of 4.5 points. It also converges far faster, reaching its best checkpoint at epoch 18 against epoch 60, despite fewer trainable parameters. The DenseNet edges past the CheXNet reference of 0.841, which we read as confirmation that our pipeline is sound rather than a meaningful improvement over that work.</p>
+
+    <table class="nb">
+      <caption><span class="lab">Table 4.</span> Validation-split performance at each model's best checkpoint. Higher is better for all metrics except the epoch.</caption>
+      <thead><tr><th>Metric</th><th class="num">M1 · Scratch</th><th class="num">M2 · Transfer</th><th class="num">Δ</th></tr></thead>
+      <tbody>
+        <tr><td>Multi-label macro AUC <span class="small">(primary)</span></td><td class="num">0.8008</td><td class="num"><b>0.8459</b></td><td class="num"><span class="pos">+0.0451</span></td></tr>
+        <tr><td>Binary AUC (Normal vs Abnormal)</td><td class="num">0.7571</td><td class="num"><b>0.7867</b></td><td class="num"><span class="pos">+0.0296</span></td></tr>
+        <tr><td>Binary F1</td><td class="num">0.6474</td><td class="num"><b>0.6736</b></td><td class="num"><span class="pos">+0.0262</span></td></tr>
+        <tr><td>Best checkpoint epoch</td><td class="num">60</td><td class="num">18</td><td class="num">−42</td></tr>
+        <tr><td>Trainable parameters</td><td class="num">≈23 M</td><td class="num">≈7.9 M</td><td class="num"></td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub"><span class="n">5.2</span>Per-class performance</h3>
+    <p>Per-class AUC-ROC for the DenseNet (Table 5) reveals a clear, clinically sensible pattern: it is strongest on findings with a distinct global shape or high contrast, and weakest on diffuse, low-contrast ones.</p>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">6</span></div>
+</section>
+
+<!-- ============================== PAGE 7 ============================== -->
+<section class="page" data-screen-label="p7">
+  <div class="cols">
+
+    <table class="tbl-tight nb">
+      <caption><span class="lab">Table 5.</span> Per-class validation AUC-ROC for Model 2 (DenseNet-121), highest to lowest. The macro average across all fourteen classes is 0.8459.</caption>
+      <thead><tr><th>Pathology</th><th class="num">AUC</th><th>Pathology</th><th class="num">AUC</th></tr></thead>
+      <tbody>
+        <tr><td>Edema</td><td class="num">0.9255</td><td>Pneumothorax</td><td class="num">0.8705</td></tr>
+        <tr><td>Hernia</td><td class="num">0.9242</td><td>Pleural Thick.</td><td class="num">0.8377</td></tr>
+        <tr><td>Emphysema</td><td class="num">0.9107</td><td>Atelectasis</td><td class="num">0.8334</td></tr>
+        <tr><td>Cardiomegaly</td><td class="num">0.9010</td><td>Fibrosis</td><td class="num">0.8085</td></tr>
+        <tr><td>Effusion</td><td class="num">0.8873</td><td>Nodule</td><td class="num">0.8084</td></tr>
+        <tr><td>Mass</td><td class="num">0.8756</td><td>Consolidation</td><td class="num">0.8063</td></tr>
+        <tr><td>Pneumonia</td><td class="num">0.7397</td><td>Infiltration</td><td class="num">0.7133</td></tr>
+      </tbody>
+    </table>
+    <p>The bottom of the ranking is occupied by Infiltration and Pneumonia, which are diffuse, subtle, and notoriously noisy in this dataset's report-mined labels. The low Pneumonia score in particular owes much to the scarcity of positives (under 1% of films); a lower ceiling on these classes is expected rather than a modelling failure, as human readers struggle with the same findings. Both models follow the same ordering — Edema, Cardiomegaly, and Emphysema easy; Infiltration and Pneumonia hard — which indicates the difficulty ranking is a property of the data (label noise, finding subtlety) rather than of either architecture. The models differ in ceiling: the DenseNet lifts the whole curve, most visibly on the mid-difficulty findings (Mass, Pneumothorax, Atelectasis), where richer pretrained features help separate subtle structure from background.</p>
+
+    <h3 class="sub"><span class="n">5.3</span>Configuration of the reported runs</h3>
+    <p>For full reproducibility we record the precise configuration of the two runs that produced the checkpoints above (Table 6), reported faithfully — including the difference in preprocessing and regularisation between them.</p>
+
+    <table class="tbl-tight nb">
+      <caption><span class="lab">Table 6.</span> Exact training configuration of the two reported runs.</caption>
+      <thead><tr><th style="width:32%">Setting</th><th>M1 · Custom CNN</th><th>M2 · DenseNet-121</th></tr></thead>
+      <tbody>
+        <tr><td>Backbone</td><td>SE-ResNet [3,4,6,3]</td><td>DenseNet-121 (ImageNet)</td></tr>
+        <tr><td>Input resolution</td><td>320×320 RGB</td><td>320×320 RGB</td></tr>
+        <tr><td>Optimizer / sched.</td><td>AdamW / cosine</td><td>AdamW / cosine</td></tr>
+        <tr><td>Learning rate</td><td>1e-3</td><td>1e-3 → 1e-4</td></tr>
+        <tr><td>Phys. / eff. batch</td><td>24 / 96 (×4)</td><td>24 / 96 (×4)</td></tr>
+        <tr><td>Mixed precision</td><td>enabled</td><td>enabled</td></tr>
+        <tr><td>Epochs / patience</td><td>100 / 15</td><td>60 / 15</td></tr>
+        <tr><td>CLAHE</td><td>disabled <span class="small">(earlier)</span></td><td>enabled</td></tr>
+        <tr><td>Label smoothing</td><td>0.0 <span class="small">(earlier)</span></td><td>0.1</td></tr>
+        <tr><td>Best epoch</td><td>60</td><td>18</td></tr>
+        <tr><td>Compute</td><td>Kaggle T4/P100</td><td>Kaggle T4/P100</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">7</span></div>
+</section>
+
+<!-- ============================== PAGE 8 ============================== -->
+<section class="page" data-screen-label="p8">
+  <div class="cols">
+
+    <p class="small">The two runs differ in CLAHE and label smoothing. The architectural conclusion holds — the gap is large and consistent across all three metrics — but the exact 4.5-point margin should be read as an upper bound on the architecture effect, because the DenseNet run also carried two extra regularisers. Re-running the from-scratch model under identical preprocessing is the first item of future work.</p>
+
+    <h3 class="sub"><span class="n">5.4</span>Inference-time enhancements</h3>
+    <p>The evaluation and demo paths add two techniques at no training cost. <b>Test-time augmentation</b> averages the sigmoid probabilities over four views (original, horizontal flip, and ±7° rotations), reducing prediction variance. A <b>two-model ensemble</b> then averages the test-time-augmented probabilities of both models; because a from-scratch CNN and a pretrained DenseNet have different inductive biases and fail on different images, averaging their outputs is a standard, reliable way to recover a small amount of macro AUC over either alone.</p>
+
+    <h2 class="sec span"><span class="n">6</span>Discussion</h2>
+    <p>What this project delivers is a controlled image-level classification comparison, not a clinical pathology detector. Holding data, task formulation, heads, loss, and evaluation fixed, the backbone and its initialisation are the key variables — which isolates the architecture and pretraining effect cleanly. Transfer learning outperforms from-scratch training by about 4.5 macro AUC-ROC points while converging more than three times faster and training fewer parameters. This is the expected outcome, reproduced cleanly on 112,000 medical images under an identical protocol. The from-scratch model is not a failure: at 0.801 macro AUC-ROC it has learned genuine pathology signal, and it grounds the transfer-learning gain in a concrete, controlled number.</p>
+
+    <table class="span">
+      <caption><span class="lab">Table 7.</span> Qualitative comparison of the two models along the dimensions relevant to the brief.</caption>
+      <thead><tr><th style="width:18%">Dimension</th><th>Model 1 — Custom CNN (scratch)</th><th>Model 2 — DenseNet-121 (transfer)</th></tr></thead>
+      <tbody>
+        <tr><td><b>Performance</b></td><td>0.8008 macro AUC — useful without pretraining, but clearly below the transfer model.</td><td>0.8459 macro AUC; best classifier in this comparison, near the CheXNet 0.841 reference.</td></tr>
+        <tr><td><b>Convergence</b></td><td>Best at epoch 60; must learn vision from scratch first.</td><td>Best at epoch 18; starts from ImageNet features and adapts rather than learning from zero.</td></tr>
+        <tr><td><b>Parameters</b></td><td>≈23 M, all trained on X-rays.</td><td>≈7.9 M trainable on a dense backbone; more accurate with fewer trainable weights.</td></tr>
+        <tr><td><b>Data efficiency</b></td><td>Trained on the full 78k split; lower-data behaviour not ablated.</td><td>Converges sooner with ImageNet features; a lower-data advantage is plausible but untested.</td></tr>
+        <tr><td><b>Transparency</b></td><td>Every weight explainable from first principles; an ideal controlled baseline.</td><td>Inherits ImageNet priors that are powerful but less transparent.</td></tr>
+        <tr><td><b>Best role</b></td><td>Controlled baseline for quantifying the value of ImageNet pretraining on this data.</td><td>Best model for demo and comparison; not a clinical deployment model.</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">8</span></div>
+</section>
+
+<!-- ============================== PAGE 9 ============================== -->
+<section class="page" data-screen-label="p9">
+  <div class="cols">
+
+    <h3 class="sub"><span class="n">6.1</span>Limitations</h3>
+    <ul>
+      <li><b>Classification, not localization.</b> Both models output image-level probabilities only — no lesion bounding boxes or spatial maps. The demo is a screening classifier, not a detector.</li>
+      <li><b>Moderate performance ceiling.</b> The DenseNet reaches 0.846 macro AUC; binary AUC is 0.787 and F1 is 0.674. Informative, but not clinically actionable without further validation.</li>
+      <li><b>Label noise.</b> ChestX-ray14 labels are report-mined rather than annotator-verified, placing a hard ceiling on AUC — especially for diffuse findings such as Infiltration and Pneumonia.</li>
+      <li><b>Validation figures only.</b> All metrics are from the checkpoint-selection split; the 22,000-image test partition is held out and should be evaluated before any external claim.</li>
+      <li><b>Unequal preprocessing.</b> The from-scratch run predates CLAHE and label smoothing; the 4.5-point gap is an upper bound on the architecture effect, not a fully controlled ablation.</li>
+      <li><b>No external validation; educational use only.</b> Trained on one institution's distribution; performance will degrade on different equipment or populations. Predictions must not substitute for professional medical judgement.</li>
+    </ul>
+
+    <h3 class="sub"><span class="n">6.2</span>Future work</h3>
+    <ul>
+      <li>Re-train the from-scratch CNN with CLAHE and label smoothing for a fully controlled ablation.</li>
+      <li>Compute final held-out test metrics with per-class confidence intervals.</li>
+      <li>Add Grad-CAM saliency overlays and quantify the ensemble's AUC gain; tune per-class decision thresholds for the screening task.</li>
+      <li>Run longer experiments on university hardware and test higher-resolution input (448×448) for subtle findings such as nodules.</li>
+      <li>Pursue lesion localisation if suitable annotated data becomes available — a distinct task from the current image-level classifier.</li>
+    </ul>
+
+    <h3 class="sub"><span class="n">6.3</span>Reproducibility and engineering</h3>
+    <p>The cloud-first pipeline is a project strength: NIH source → Kaggle preprocessing → Hugging Face dataset → training kernels → model hub and Space demo. Runs are fully deterministic; hyperparameters live in versioned YAML; every push triggers ruff linting, 51 pytest unit tests, and mypy type checking; artefacts upload automatically to the hub.</p>
+
+    <h2 class="sec span"><span class="n">7</span>Conclusion</h2>
+    <p>We compared a custom SE-ResNet trained from scratch (0.801 macro AUC-ROC) against a DenseNet-121 adapted by transfer learning (0.846) on the 112,120-image NIH ChestX-ray14 database. Both solve a fourteen-class multi-label task and a binary screening task through a shared backbone with two heads. The transfer-learned model surpasses the CheXNet reference and converges three times faster; the from-scratch baseline grounds the gain in a concrete, controlled number. The system is reproducible, continuously tested, and deployed as a live demo. Fully automated classification from weakly supervised labels remains hard; §6.2 marks the natural next steps.</p>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">9</span></div>
+</section>
+
+<!-- ============================== PAGE 10 ============================== -->
+<section class="page" data-screen-label="p10">
+  <div class="cols">
+
+    <h2 class="sec span">Acknowledgements</h2>
+    <p class="acks">This work was carried out as project work for the Deep Learning and Big Data course in the AIN program. We thank Kaggle for the free GPU compute and Hugging Face for the dataset, model, and Space hosting that made the cloud-only workflow possible.</p>
+
+    <h2 class="sec span">Appendix A · Individual Contributions</h2>
+    <p>All four members contributed to discussion, design review, and the final report and presentation. Primary ownership of the work packages was distributed as follows.</p>
+    <table class="tbl-tight">
+      <thead><tr><th style="width:26%">Member</th><th>Primary contributions</th></tr></thead>
+      <tbody>
+        <tr><td><b>Alexander Rudaev</b></td><td>Project setup and architecture; cloud training infrastructure and the Kaggle dispatch pipeline; Hugging Face dataset, model, and Space integration; CI/CD; report and deck assembly.</td></tr>
+        <tr><td><b>Fares Elbermawy</b></td><td>Data pipeline: NIH source ingestion, the 320×320 resize-and-shard preprocessing, dataset hosting and versioning, and the PyTorch dataset and transforms layer.</td></tr>
+        <tr><td><b>Sameer Kumar</b></td><td>Model 1 (custom SE-ResNet from scratch): architecture, residual and SE blocks, the training loop, loss and class balancing, and the scratch-model experiments.</td></tr>
+        <tr><td><b>Huraira Ali</b></td><td>Model 2 (DenseNet-121 transfer learning): two-phase fine-tuning, the evaluation and metrics suite, TTA and ensemble inference, and the Streamlit demo application.</td></tr>
+      </tbody>
+    </table>
+    <p class="small">This table reflects primary ownership; in practice the work packages overlapped and were reviewed collaboratively.</p>
+
+    <h2 class="sec span">Appendix B · Project Resources</h2>
+    <table class="tbl-tight">
+      <thead><tr><th style="width:32%">Resource</th><th>Location</th></tr></thead>
+      <tbody>
+        <tr><td>Source code (GitHub)</td><td>github.com/arudaev/chexvision</td></tr>
+        <tr><td>Presentation deck</td><td>arudaev.github.io/chexvision</td></tr>
+        <tr><td>Live demo (Streamlit)</td><td>huggingface.co/spaces/arudaev/chexvision-demo</td></tr>
+        <tr><td>Dataset (320×320)</td><td>huggingface.co/datasets/arudaev/chest-xray-14-320</td></tr>
+        <tr><td>Model 1 — custom CNN</td><td>huggingface.co/arudaev/chexvision-scratch</td></tr>
+        <tr><td>Model 2 — DenseNet</td><td>huggingface.co/arudaev/chexvision-densenet</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="sec span">References</h2>
+    <ol class="refs">
+      <li>Wang, X., Peng, Y., Lu, L., Lu, Z., Bagheri, M., &amp; Summers, R. M. (2017). ChestX-ray8: Hospital-scale Chest X-ray Database and Benchmarks on Weakly-Supervised Classification and Localization of Common Thorax Diseases. <i>CVPR</i>.</li>
+      <li>Rajpurkar, P., Irvin, J., Zhu, K., et al. (2017). CheXNet: Radiologist-Level Pneumonia Detection on Chest X-Rays with Deep Learning. <i>arXiv:1711.05225</i>.</li>
+      <li>Huang, G., Liu, Z., van der Maaten, L., &amp; Weinberger, K. Q. (2017). Densely Connected Convolutional Networks. <i>CVPR</i>.</li>
+      <li>He, K., Zhang, X., Ren, S., &amp; Sun, J. (2016). Deep Residual Learning for Image Recognition. <i>CVPR</i>.</li>
+      <li>Hu, J., Shen, L., &amp; Sun, G. (2018). Squeeze-and-Excitation Networks. <i>CVPR</i>.</li>
+      <li>Loshchilov, I., &amp; Hutter, F. (2019). Decoupled Weight Decay Regularization. <i>ICLR</i>.</li>
+    </ol>
+
+    <footer class="note span">
+      CheXVision — Project Work, AIN, Deep Learning and Big Data. Educational use only; not a medical device. All reported metrics are on the validation split at each model's best checkpoint.
+    </footer>
+
+  </div>
+  <div class="foot"><span>CheXVision · Project Report</span><span class="pg">10</span></div>
+</section>
+
+</body>
+</html>

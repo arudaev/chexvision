@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CheXVision — Report Figures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#20242c; --mut:#737a88; --hair:#e2e6ec; --paper:#ffffff;
+    --bg:#eef1f5;
+  }
+  html,body{margin:0;background:var(--bg);font-family:'Inter',sans-serif;color:var(--ink);}
+  .wrap{max-width:1780px;margin:0 auto;padding:56px 40px 120px;}
+  header.page{margin-bottom:44px;}
+  header.page .kick{font:600 12px 'JetBrains Mono',monospace;letter-spacing:2px;text-transform:uppercase;color:var(--mut);}
+  header.page h1{font-size:30px;font-weight:700;letter-spacing:-0.02em;margin:10px 0 6px;}
+  header.page p{font-size:15px;color:var(--mut);max-width:760px;line-height:1.5;margin:0;}
+  .plate{background:var(--paper);border:1px solid var(--hair);border-radius:14px;
+    box-shadow:0 1px 2px rgba(20,30,50,0.04),0 8px 30px rgba(20,30,50,0.05);
+    margin-bottom:40px;overflow:hidden;}
+  .plate .fig{padding:30px 34px 14px;}
+  .plate .cap{border-top:1px solid var(--hair);background:#fbfcfd;padding:16px 34px 18px;
+    font-size:13.5px;line-height:1.55;color:#48505e;}
+  .plate .cap b{color:var(--ink);font-weight:700;}
+  .plate .tag{font:600 11px 'JetBrains Mono',monospace;letter-spacing:1.4px;text-transform:uppercase;color:var(--mut);
+    display:block;margin-bottom:5px;}
+  /* export isolation */
+  html.export-html{background:#ffffff;}
+  body.export{background:#ffffff;min-height:100vh;}
+  body.export .wrap{padding:0;max-width:none;}
+  body.export header.page,body.export .cap{display:none;}
+  body.export .plate{border:0;border-radius:0;box-shadow:none;margin:0;}
+  body.export .plate{display:none;}
+  body.export .plate.show{display:block;}
+  body.export .plate.show .fig{padding:18px 18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <div class="kick">CheXVision · Deep Learning &amp; Big Data</div>
+    <h1>Project-report figures</h1>
+    <p>Publication-grade redraws of the four report diagrams — feature maps as tapering tensor volumes, a restrained slate-blue pathway, coral reserved for the primary multi-label task and key events. Inter + JetBrains Mono throughout.</p>
+  </header>
+
+  <section class="plate" id="plate1">
+    <div class="fig"><div id="fig1"></div></div>
+    <div class="cap"><span class="tag">Figure 1</span><b>End-to-end pipeline.</b> Top lane: the one-time data build and per-run input pipeline. Bottom lane: the per-epoch training loop, from the dual-head forward pass through the combined weighted-BCE loss, gradient accumulation, and best-checkpoint upload to the model hub.</div>
+  </section>
+
+  <section class="plate" id="plate2">
+    <div class="fig"><div id="fig2"></div></div>
+    <div class="cap"><span class="tag">Figure 2</span><b>Model 1 — custom SE-ResNet.</b> A 7×7 stem downsamples the input; four residual stages (depths 3-4-6-3, widths 64-128-256-512) progressively halve spatial resolution while doubling channels; a global average pool feeds the shared 512-dim vector to the two task heads. Inset: the SE residual block.</div>
+  </section>
+
+  <section class="plate" id="plate3">
+    <div class="fig"><div id="fig3"></div></div>
+    <div class="cap"><span class="tag">Figure 3</span><b>Model 2 — DenseNet-121.</b> The ImageNet-pretrained dense backbone (dense connectivity, strong feature reuse) feeds a 1024-dim pooled vector into a shared feature layer (Linear 1024→512, ReLU, dropout 0.3), then the same two task heads used by Model 1. Inset: dense connectivity.</div>
+  </section>
+
+  <section class="plate" id="plate4">
+    <div class="fig"><div id="fig4"></div></div>
+    <div class="cap"><span class="tag">Figure 4</span><b>Two-phase fine-tuning.</b> Phase 1 freezes the backbone and trains only the new heads at lr = 1e-3, letting them stabilize. Phase 2 (from epoch 6) unfreezes the whole network at a 10× lower lr = 1e-4 for gentle end-to-end domain adaptation.</div>
+  </section>
+</div>
+
+<script src="figlib.js"></script>
+<script src="fig1_pipeline.js"></script>
+<script src="fig2_seresnet.js"></script>
+<script src="fig3_densenet.js"></script>
+<script src="fig4_finetune.js"></script>
+<script>
+  function drawAll(){
+    try{ window.drawFig1 && drawFig1('fig1'); }catch(e){ console.error('fig1',e); }
+    try{ window.drawFig2 && drawFig2('fig2'); }catch(e){ console.error('fig2',e); }
+    try{ window.drawFig3 && drawFig3('fig3'); }catch(e){ console.error('fig3',e); }
+    try{ window.drawFig4 && drawFig4('fig4'); }catch(e){ console.error('fig4',e); }
+  }
+  // export mode: ?export=2  shows only that plate, white bg, tight
+  const params = new URLSearchParams(location.search);
+  const ex = params.get('export');
+  if(ex){
+    document.documentElement.classList.add('export-html');
+    document.body.classList.add('export');
+    const p = document.getElementById('plate'+ex);
+    if(p) p.classList.add('show');
+  }
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(drawAll); }
+  drawAll();
+</script>
+</body>
+</html>
