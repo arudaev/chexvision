@@ -55,6 +55,24 @@ We implement and compare two deep learning approaches on two distinct tasks:
 
 ---
 
+## Results
+
+| Metric | Model 1 · Custom CNN | Model 2 · DenseNet-121 | Δ |
+|--------|----------------------|------------------------|---|
+| Multi-label macro AUC-ROC *(primary)* | 0.8008 | **0.8459** | +0.045 |
+| Binary AUC (Normal vs Abnormal) | 0.7571 | **0.7867** | +0.030 |
+| Binary F1 | 0.6474 | **0.6736** | +0.026 |
+| Best checkpoint epoch | 60 | **18** | −42 |
+| Trainable parameters | ≈23 M | ≈7.9 M | — |
+
+*Validation split at each model's best checkpoint. CheXNet reference (Rajpurkar et al., 2017): 0.841 macro AUC-ROC.*
+
+**Per-class AUC-ROC (DenseNet-121):** strongest on high-contrast, globally-shaped findings — Edema 0.926, Hernia 0.924, Emphysema 0.911, Cardiomegaly 0.901; weakest on diffuse, label-noisy findings — Pneumonia 0.740, Infiltration 0.713. Both models follow the same class-difficulty ranking, indicating the ceiling is set by data quality, not architecture.
+
+The transfer-learned DenseNet surpasses the CheXNet reference and converges 3× faster while training fewer parameters. The from-scratch model (0.801 macro AUC) provides a controlled baseline for quantifying the value of ImageNet pretraining on medical imagery.
+
+---
+
 ## Architecture
 
 Both models share the same dual-head design: one forward pass produces both a 14-class multi-label output and a binary normal/abnormal output.
@@ -64,7 +82,7 @@ flowchart TB
     IMG["📷 Input: 320×320 RGB Chest X-ray"]
 
     IMG -->|Model 1| CNN["Custom ResNet CNN\nResNet-50 depth · SE channel attention\n4 stages [3,4,6,3] · ~23 M params\ntrained from scratch · Kaiming init"]
-    IMG -->|Model 2| DNN["DenseNet-121\nImageNet pretrained backbone\n2-phase fine-tuning · ~7 M trainable\nfreeze backbone → unfreeze all"]
+    IMG -->|Model 2| DNN["DenseNet-121\nImageNet pretrained backbone\n2-phase fine-tuning · ~7.9 M trainable\nfreeze backbone → unfreeze all"]
 
     CNN --> F1["512-d  ·  Global Avg Pool"]
     DNN --> F2["1024-d  ·  Global Avg Pool"]

@@ -20,7 +20,7 @@
       <div class="subtitle">Large-scale chest X-ray pathology classification with a custom CNN and DenseNet-121 transfer learning</div>
       <div class="authors">Alexander Rudaev · Sameer Kumar · Huraira Ali · Fares Elbermawy</div>
       <div class="affil">Deep Learning and Big Data, AIN Program · Dataset: NIH ChestX-ray14 (112,120 images, 14 labels)</div>
-      <div class="links">github.com/arudaev/chexvision&nbsp;&nbsp;·&nbsp;&nbsp;huggingface.co/spaces/arudaev/chexvision-demo</div>
+      <div class="links"><a href="https://github.com/arudaev/chexvision">github.com/arudaev/chexvision</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://huggingface.co/spaces/arudaev/chexvision-demo">huggingface.co/spaces/arudaev/chexvision-demo</a></div>
       <div class="titlerule"></div>
     </div>
 
@@ -94,7 +94,7 @@
       <tbody>
         <tr><td>Loss</td><td>Combined <code>BCEWithLogitsLoss</code>, <code>1.0×</code> multi-label + <code>0.5×</code> binary. The fused sigmoid+BCE is numerically stable; the binary task is down-weighted so it supports rather than dominates the harder multi-label objective.</td></tr>
         <tr><td>Class balancing</td><td>Per-class <code>pos_weight</code> on the multi-label loss, from training-split prevalence, to counteract the long tail (§2.2). The binary head uses plain BCE, being near-balanced.</td></tr>
-        <tr><td>Optimizer</td><td>AdamW with decoupled weight decay 1e-4 — Adam-family convergence with proper regularisation; a standard choice for modern vision fine-tuning.</td></tr>
+        <tr><td>Optimizer</td><td>AdamW with decoupled weight decay 1e-4 (Loshchilov &amp; Hutter, 2019) — Adam-family convergence with proper regularisation; a standard choice for modern vision fine-tuning.</td></tr>
         <tr><td>LR schedule</td><td>Cosine annealing over the full epoch budget with a short warm-up, decaying smoothly towards zero for a stable final solution.</td></tr>
         <tr><td>Mixed precision</td><td>fp16 forward/backward with fp32 master weights: ~1.7× faster on T4/P100 and roughly half the memory, which makes 320-pixel training feasible in the free nine-hour Kaggle window.</td></tr>
         <tr><td>Grad. accumulation</td><td>Physical batch 24 over four steps gives an effective batch of 96, recovering large-batch stability despite 320-pixel memory cost.</td></tr>
@@ -119,7 +119,7 @@
         <tr><td>ImageNet norm</td><td>Required by the pretrained DenseNet; applied to both models so inputs match.</td></tr>
       </tbody>
     </table>
-    <p>The code base also implements two optional, config-driven enhancements. CLAHE performs local contrast enhancement in LAB space to expose low-contrast findings, and label smoothing (ε=0.1) regularises against the noisy, report-mined labels. As reported in Section 5.3, the final DenseNet checkpoint used both, whereas the from-scratch checkpoint predates them — we state this explicitly rather than conceal it, and closing the gap is the first item of future work.</p>
+    <p>The code base also implements two optional, config-driven enhancements. CLAHE performs local contrast enhancement in LAB space to expose low-contrast findings, and label smoothing (ε=0.1) regularises against the noisy, report-mined labels. The final DenseNet checkpoint used both; the from-scratch checkpoint predates them — we flag this difference explicitly in Section 5.3, and closing the gap is the first item of future work.</p>
 
   </div>
   <div class="foot"><span>CheXVision · Project Report</span><span class="pg">3</span></div>
@@ -132,7 +132,7 @@
     <h2 class="sec span"><span class="n">4</span>Models</h2>
 
     <h3 class="sub"><span class="n">4.1</span>Model 1 — custom residual CNN, from scratch</h3>
-    <p>The first model is a residual convolutional network built and trained entirely from scratch, with no pretrained weights of any kind. Its architecture follows ResNet-50-equivalent depth and adds Squeeze-and-Excitation channel attention; it holds roughly 23 million parameters, all learned on chest X-rays alone.</p>
+    <p>The first model is a residual convolutional network built and trained entirely from scratch, with no pretrained weights of any kind. Its architecture follows ResNet-50-equivalent depth (He et al., 2016) and adds Squeeze-and-Excitation channel attention; it holds roughly 23 million parameters, all learned on chest X-rays alone.</p>
 
     <figure class="span framed">
       <img src="assets/CheXVision_Fig2_SE-ResNet.png" alt="Custom SE-ResNet architecture">
@@ -152,7 +152,7 @@
   <div class="cols">
 
     <h3 class="sub"><span class="n">4.2</span>Model 2 — DenseNet-121 transfer learning</h3>
-    <p>The second model is a DenseNet-121 pretrained on ImageNet and fine-tuned for our two tasks — the transfer-learning paradigm required by the brief, following the CheXNet design (Rajpurkar et al., 2017).</p>
+    <p>The second model is a DenseNet-121 (Huang et al., 2017) pretrained on ImageNet and fine-tuned for our two tasks — the transfer-learning paradigm required by the brief, following the CheXNet design (Rajpurkar et al., 2017).</p>
 
     <figure class="span framed">
       <img src="assets/CheXVision_Fig3_DenseNet-121.png" alt="DenseNet-121 transfer-learning architecture">
@@ -160,6 +160,7 @@
     </figure>
 
     <p>Three properties motivate this choice. <b>Dense connectivity</b> maximises feature reuse, strengthens gradient flow, and reaches strong accuracy with fewer parameters than a comparable ResNet — well suited to a free-GPU budget. <b>ImageNet pretraining</b> transfers well: low-level edges, gradients, and texture detectors are domain-agnostic, letting the network adapt to radiographic structure rather than relearn vision from scratch. Finally, the backbone is <b>proven on this exact data</b>: CheXNet reported a macro AUC-ROC of 0.841 with a single-head DenseNet-121, giving a literature-anchored target.</p>
+    <p>We adapt the backbone minimally for the dual-head design. The original 1000-class classifier is replaced by a shared projection layer (Linear 1024→512, ReLU, dropout 0.3) that maps the 1024-dimensional global-average-pooled output down to the 512-dimensional space shared with Model 1, followed by the same two task heads. This bridge layer is the only randomly initialised component; all backbone weights carry ImageNet features into training. The resulting trainable parameter count is approximately 7.9 million — the full backbone plus bridge and heads — against 23 million for the from-scratch model, yet it outperforms it by over four AUC points (Section 5).</p>
 
   </div>
   <div class="foot"><span>CheXVision · Project Report</span><span class="pg">5</span></div>
@@ -256,7 +257,7 @@
     <p>The evaluation and demo paths add two techniques at no training cost. <b>Test-time augmentation</b> averages the sigmoid probabilities over four views (original, horizontal flip, and ±7° rotations), reducing prediction variance. A <b>two-model ensemble</b> then averages the test-time-augmented probabilities of both models; because a from-scratch CNN and a pretrained DenseNet have different inductive biases and fail on different images, averaging their outputs is a standard, reliable way to recover a small amount of macro AUC over either alone.</p>
 
     <h2 class="sec span"><span class="n">6</span>Discussion</h2>
-    <p>What this project delivers is a controlled image-level classification comparison, not a clinical pathology detector. Holding data, task formulation, heads, loss, and evaluation fixed, the backbone and its initialisation are the key variables — which isolates the architecture and pretraining effect cleanly. Transfer learning outperforms from-scratch training by about 4.5 macro AUC-ROC points while converging more than three times faster and training fewer parameters. This is the expected outcome, reproduced cleanly on 112,000 medical images under an identical protocol. The from-scratch model is not a failure: at 0.801 macro AUC-ROC it has learned genuine pathology signal, and it grounds the transfer-learning gain in a concrete, controlled number.</p>
+    <p>What this project delivers is a controlled image-level classification comparison, not a clinical pathology detector. Holding data, task formulation, heads, loss, and evaluation fixed, the backbone and its initialisation are the key variables — which isolates the architecture and pretraining effect cleanly. Transfer learning outperforms from-scratch training by about 4.5 macro AUC-ROC points while converging more than three times faster and training fewer parameters. This is the expected outcome, reproduced cleanly on 112,120 medical images under an identical protocol. The from-scratch model is not a failure: at 0.801 macro AUC-ROC it has learned genuine pathology signal, and it grounds the transfer-learning gain in a concrete, controlled number.</p>
 
     <table class="span">
       <caption><span class="lab">Table 7.</span> Qualitative comparison of the two models along the dimensions relevant to the brief.</caption>
@@ -332,12 +333,12 @@
     <table class="tbl-tight">
       <thead><tr><th style="width:32%">Resource</th><th>Location</th></tr></thead>
       <tbody>
-        <tr><td>Source code (GitHub)</td><td>github.com/arudaev/chexvision</td></tr>
-        <tr><td>Presentation deck</td><td>arudaev.github.io/chexvision</td></tr>
-        <tr><td>Live demo (Streamlit)</td><td>huggingface.co/spaces/arudaev/chexvision-demo</td></tr>
-        <tr><td>Dataset (320×320)</td><td>huggingface.co/datasets/arudaev/chest-xray-14-320</td></tr>
-        <tr><td>Model 1 — custom CNN</td><td>huggingface.co/arudaev/chexvision-scratch</td></tr>
-        <tr><td>Model 2 — DenseNet</td><td>huggingface.co/arudaev/chexvision-densenet</td></tr>
+        <tr><td>Source code (GitHub)</td><td><a href="https://github.com/arudaev/chexvision">github.com/arudaev/chexvision</a></td></tr>
+        <tr><td>Presentation deck</td><td><a href="https://arudaev.github.io/chexvision">arudaev.github.io/chexvision</a></td></tr>
+        <tr><td>Live demo (Streamlit)</td><td><a href="https://huggingface.co/spaces/arudaev/chexvision-demo">huggingface.co/spaces/arudaev/chexvision-demo</a></td></tr>
+        <tr><td>Dataset (320×320)</td><td><a href="https://huggingface.co/datasets/arudaev/chest-xray-14-320">huggingface.co/datasets/arudaev/chest-xray-14-320</a></td></tr>
+        <tr><td>Model 1 — custom CNN</td><td><a href="https://huggingface.co/arudaev/chexvision-scratch">huggingface.co/arudaev/chexvision-scratch</a></td></tr>
+        <tr><td>Model 2 — DenseNet</td><td><a href="https://huggingface.co/arudaev/chexvision-densenet">huggingface.co/arudaev/chexvision-densenet</a></td></tr>
       </tbody>
     </table>
 
