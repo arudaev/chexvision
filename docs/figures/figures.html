@@ -64,6 +64,37 @@
     <div class="fig"><div id="fig4"></div></div>
     <div class="cap"><span class="tag">Figure 4</span><b>Two-phase fine-tuning.</b> Phase 1 freezes the backbone and trains only the new heads at lr = 1e-3, letting them stabilize. Phase 2 (from epoch 6) unfreezes the whole network at a 10× lower lr = 1e-4 for gentle end-to-end domain adaptation.</div>
   </section>
+
+  <header class="page" style="margin-top:24px;">
+    <div class="kick">CheXVision · Deck figures</div>
+    <h1>Presentation figures</h1>
+    <p>The same figlib visual system re-proportioned for 16:9 slide regions. Report-only insets (SE block, dense connectivity) are dropped — each slide's text panel carries that detail instead. These render directly into the deck's slide containers.</p>
+  </header>
+
+  <section class="plate" id="plateD1">
+    <div class="fig"><div id="figD1"></div></div>
+    <div class="cap"><span class="tag">Deck · Slide 4</span><b>Dual-task framing.</b> One forward pass through a shared (architecture-agnostic) convolutional backbone produces a 512-dim vector that feeds two heads; their losses combine as 1.0·ℒ_ml + 0.5·ℒ_bin.</div>
+  </section>
+
+  <section class="plate" id="plateD2">
+    <div class="fig"><div id="figD2"></div></div>
+    <div class="cap"><span class="tag">Deck · Slide 6</span><b>Custom SE-ResNet.</b> Backbone row only — the SE residual-block inset lives in the slide's side panel.</div>
+  </section>
+
+  <section class="plate" id="plateD3">
+    <div class="fig"><div id="figD3"></div></div>
+    <div class="cap"><span class="tag">Deck · Slide 7</span><b>DenseNet-121.</b> Backbone row only — dense-connectivity inset lives in the slide's side panel.</div>
+  </section>
+
+  <section class="plate" id="plateD4">
+    <div class="fig"><div id="figD4"></div></div>
+    <div class="cap"><span class="tag">Deck · Slide 8</span><b>Two-phase fine-tuning.</b> Compact timeline: phase bands, the backbone/heads Gantt lanes, and the lr step-then-cosine track.</div>
+  </section>
+
+  <section class="plate" id="plateD5" style="max-width:560px;margin-left:auto;margin-right:auto;">
+    <div class="fig"><div id="figD5"></div></div>
+    <div class="cap"><span class="tag">Deck · Slide 9</span><b>Training pipeline.</b> Vertical flow for the deck's narrow left column — snapshot → augment → dual-head forward → combined loss → checkpoint.</div>
+  </section>
 </div>
 
 <script src="figlib.js"></script>
@@ -71,12 +102,18 @@
 <script src="fig2_seresnet.js"></script>
 <script src="fig3_densenet.js"></script>
 <script src="fig4_finetune.js"></script>
+<script src="deck_figs.js"></script>
 <script>
   function drawAll(){
     try{ window.drawFig1 && drawFig1('fig1'); }catch(e){ console.error('fig1',e); }
     try{ window.drawFig2 && drawFig2('fig2'); }catch(e){ console.error('fig2',e); }
     try{ window.drawFig3 && drawFig3('fig3'); }catch(e){ console.error('fig3',e); }
     try{ window.drawFig4 && drawFig4('fig4'); }catch(e){ console.error('fig4',e); }
+    try{ window.drawDeckDualTask && drawDeckDualTask('figD1'); }catch(e){ console.error('figD1',e); }
+    try{ window.drawDeckSEResNet && drawDeckSEResNet('figD2'); }catch(e){ console.error('figD2',e); }
+    try{ window.drawDeckDenseNet && drawDeckDenseNet('figD3'); }catch(e){ console.error('figD3',e); }
+    try{ window.drawDeckFinetune && drawDeckFinetune('figD4'); }catch(e){ console.error('figD4',e); }
+    try{ window.drawDeckPipeline && drawDeckPipeline('figD5'); }catch(e){ console.error('figD5',e); }
   }
   // export mode: ?export=2  shows only that plate, white bg, tight
   const params = new URLSearchParams(location.search);

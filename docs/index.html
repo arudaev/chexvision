@@ -147,6 +147,12 @@
   }
 
   .badge-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* Deck figures (figlib) */
+  .deckfig { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .deckfig svg { display: block; width: 100%; height: 100%; }
+  /* pipeline is a tall column: height-constrain it so it never overflows the slide */
+  #deckfig-pipeline svg { width: auto; height: 100%; max-width: 100%; }
 </style>
 </head>
 <body>
@@ -275,50 +281,7 @@
       <h2 class="slide-title">One forward pass, two clinically-aligned predictions.</h2>
       <p class="lede">A shared feature extractor feeds two heads — a fast triage decision and a detailed pathology profile. Trained jointly with a combined loss so both objectives shape the representation.</p>
 
-      <svg viewBox="0 0 1700 380" style="width:100%; height:380px; margin-top: 18px;" aria-label="Dual-head architecture diagram">
-        <defs>
-          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f3340"/>
-          </marker>
-        </defs>
-        <!-- Input -->
-        <rect x="30" y="150" width="260" height="90" rx="12" fill="#ffffff" stroke="oklch(0.86 0.008 250)"/>
-        <text x="160" y="185" text-anchor="middle" font-family="Inter" font-size="20" font-weight="600" fill="#1a1d24">Input</text>
-        <text x="160" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="15" fill="#5b6072">3 × 320 × 320 RGB</text>
-
-        <!-- Arrow -->
-        <line x1="300" y1="195" x2="380" y2="195" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
-
-        <!-- Backbone -->
-        <rect x="390" y="110" width="380" height="170" rx="12" fill="oklch(0.93 0.04 245)" stroke="oklch(0.62 0.12 245)"/>
-        <text x="580" y="150" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#14213d">Shared Backbone</text>
-        <text x="580" y="185" text-anchor="middle" font-family="Inter" font-size="17" fill="#14213d">SE-ResNet or DenseNet-121</text>
-        <text x="580" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#14213d">Conv layers → Global Avg Pool</text>
-        <text x="580" y="245" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#14213d">512-dim feature vector</text>
-
-        <!-- Arrow to heads -->
-        <line x1="780" y1="160" x2="860" y2="100" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
-        <line x1="780" y1="230" x2="860" y2="290" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
-
-        <!-- Multi-label head -->
-        <rect x="870" y="50" width="420" height="120" rx="12" fill="oklch(0.94 0.04 40)" stroke="oklch(0.72 0.12 30)"/>
-        <text x="1080" y="92" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#3a1108">Multi-Label Head</text>
-        <text x="1080" y="122" text-anchor="middle" font-family="Inter" font-size="16" fill="#3a1108">Linear 512 → 14 · sigmoid</text>
-        <text x="1080" y="148" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#3a1108">Weighted BCE · 14 pathologies</text>
-
-        <!-- Binary head -->
-        <rect x="870" y="220" width="420" height="120" rx="12" fill="oklch(0.94 0.06 155)" stroke="oklch(0.65 0.13 155)"/>
-        <text x="1080" y="262" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#0a2e1b">Binary Head</text>
-        <text x="1080" y="292" text-anchor="middle" font-family="Inter" font-size="16" fill="#0a2e1b">Linear 512 → 1 · sigmoid</text>
-        <text x="1080" y="318" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#0a2e1b">BCE · Normal vs. Abnormal</text>
-
-        <!-- Loss -->
-        <line x1="1290" y1="110" x2="1420" y2="175" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
-        <line x1="1290" y1="280" x2="1420" y2="215" stroke="#2f3340" stroke-width="2" marker-end="url(#arr)"/>
-        <rect x="1420" y="150" width="250" height="90" rx="12" fill="oklch(0.19 0.012 250)"/>
-        <text x="1545" y="185" text-anchor="middle" font-family="Inter" font-size="20" font-weight="700" fill="#f5f5f2">Combined Loss</text>
-        <text x="1545" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="oklch(0.78 0.13 60)">1.0 · ℒ_ml + 0.5 · ℒ_bin</text>
-      </svg>
+      <div id="deckfig-dualtask" class="deckfig" style="flex:1;width:100%;margin-top:22px;"></div>
 
       <div class="foot"><span>03 / 19</span><span>Shared backbone · Two heads</span></div>
     </div>
@@ -346,77 +309,8 @@
       <h2 class="slide-title">Custom SE-ResNet · depth [3, 4, 6, 3] · Kaiming init · no pretraining.</h2>
 
       <div class="grid" style="grid-template-columns: 1fr 360px; gap: 40px; margin-top: 20px; flex: 1;">
-        <div class="figure" style="min-height: 460px; padding: 28px 22px;">
-          <svg viewBox="0 0 1500 400" style="width:100%; height: auto;" aria-label="SE-ResNet architecture diagram">
-            <defs>
-              <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f3340"/></marker>
-            </defs>
-            <!-- Input -->
-            <rect x="10" y="155" width="120" height="90" rx="12" fill="oklch(0.32 0.014 250)" stroke="oklch(0.22 0.014 250)"/>
-            <text x="70" y="188" text-anchor="middle" font-family="Inter" font-size="16" font-weight="700" fill="#f5f5f2">Input</text>
-            <text x="70" y="210" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.85 0.006 85)">3 × 320</text>
-            <text x="70" y="226" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.85 0.006 85)">× 320</text>
-            <line x1="130" y1="200" x2="162" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
-
-            <!-- Stem -->
-            <rect x="165" y="140" width="130" height="120" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
-            <text x="230" y="170" text-anchor="middle" font-family="Inter" font-size="16" font-weight="700" fill="#14213d">Stem</text>
-            <text x="230" y="192" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">7×7 Conv</text>
-            <text x="230" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">BN · ReLU</text>
-            <text x="230" y="224" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">3→64ch</text>
-            <text x="230" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">MaxPool ÷2</text>
-            <line x1="295" y1="200" x2="327" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
-
-            <!-- Stage 1 -->
-            <rect x="330" y="150" width="130" height="100" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
-            <text x="395" y="178" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Stage 1</text>
-            <text x="395" y="202" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">3× SE-ResBlock</text>
-            <text x="395" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">64ch</text>
-            <line x1="460" y1="200" x2="492" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
-
-            <!-- Stage 2 -->
-            <rect x="495" y="144" width="140" height="112" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
-            <text x="565" y="172" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Stage 2  ↓½</text>
-            <text x="565" y="198" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">4× SE-ResBlock</text>
-            <text x="565" y="220" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">128ch</text>
-            <line x1="635" y1="200" x2="667" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
-
-            <!-- Stage 3 -->
-            <rect x="670" y="138" width="150" height="124" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
-            <text x="745" y="166" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Stage 3  ↓½</text>
-            <text x="745" y="196" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">6× SE-ResBlock</text>
-            <text x="745" y="218" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">256ch</text>
-            <line x1="820" y1="200" x2="852" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
-
-            <!-- Stage 4 -->
-            <rect x="855" y="132" width="150" height="136" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
-            <text x="930" y="160" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Stage 4  ↓½</text>
-            <text x="930" y="192" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">3× SE-ResBlock</text>
-            <text x="930" y="214" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">512ch</text>
-            <line x1="1005" y1="200" x2="1037" y2="200" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
-
-            <!-- GAP -->
-            <rect x="1040" y="140" width="140" height="120" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
-            <text x="1110" y="166" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#14213d">Global Avg Pool</text>
-            <text x="1110" y="196" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">Dropout(0.5)</text>
-            <text x="1110" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#14213d">512-dim</text>
-
-            <!-- branches -->
-            <line x1="1180" y1="170" x2="1222" y2="110" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
-            <line x1="1180" y1="228" x2="1222" y2="290" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrA)"/>
-
-            <!-- Multi-label Head -->
-            <rect x="1225" y="50" width="270" height="120" rx="12" fill="oklch(0.55 0.13 155)" stroke="oklch(0.4 0.12 155)"/>
-            <text x="1360" y="86" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#fff">Multilabel Head</text>
-            <text x="1360" y="114" text-anchor="middle" font-family="Inter" font-size="13" fill="#fff">Linear 512→14</text>
-            <text x="1360" y="140" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#e8f3ec">sigmoid · 14 pathologies</text>
-
-            <!-- Binary Head -->
-            <rect x="1225" y="230" width="270" height="120" rx="12" fill="oklch(0.52 0.17 245)" stroke="oklch(0.38 0.15 245)"/>
-            <text x="1360" y="266" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#fff">Binary Head</text>
-            <text x="1360" y="294" text-anchor="middle" font-family="Inter" font-size="13" fill="#fff">Linear 512→1</text>
-            <text x="1360" y="320" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#e6eefc">sigmoid · Normal/Abnormal</text>
-          </svg>
+        <div class="figure" style="min-height: 460px; padding: 26px 26px;">
+          <div id="deckfig-seresnet" class="deckfig" style="width:100%;height:100%;"></div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 18px;">
@@ -443,55 +337,8 @@
       <h2 class="slide-title">DenseNet-121 · ImageNet-pretrained · dense connectivity, 7.9M parameters.</h2>
 
       <div class="grid" style="grid-template-columns: 1fr 360px; gap: 40px; margin-top: 20px; flex: 1;">
-        <div class="figure" style="min-height: 420px; padding: 32px 22px;">
-          <svg viewBox="0 0 1500 360" style="width:100%; height:auto;" aria-label="DenseNet-121 architecture diagram">
-            <defs>
-              <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f3340"/></marker>
-            </defs>
-            <!-- Input -->
-            <rect x="10" y="130" width="120" height="100" rx="12" fill="oklch(0.32 0.014 250)" stroke="oklch(0.22 0.014 250)"/>
-            <text x="70" y="166" text-anchor="middle" font-family="Inter" font-size="16" font-weight="700" fill="#f5f5f2">Input</text>
-            <text x="70" y="192" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.85 0.006 85)">3 × 320</text>
-            <text x="70" y="210" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.85 0.006 85)">× 320</text>
-            <line x1="130" y1="180" x2="170" y2="180" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
-
-            <!-- DenseNet backbone (purple strong) -->
-            <rect x="175" y="90" width="260" height="180" rx="12" fill="oklch(0.45 0.2 300)" stroke="oklch(0.32 0.18 300)"/>
-            <text x="305" y="128" text-anchor="middle" font-family="Inter" font-size="17" font-weight="700" fill="#fff">DenseNet-121</text>
-            <text x="305" y="150" text-anchor="middle" font-family="Inter" font-size="14" fill="#fff">Backbone</text>
-            <text x="305" y="186" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.93 0.04 300)">ImageNet pretrained</text>
-            <text x="305" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.93 0.04 300)">Dense connectivity</text>
-            <text x="305" y="234" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="oklch(0.93 0.04 300)">7.9M parameters</text>
-            <line x1="435" y1="180" x2="475" y2="180" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
-
-            <!-- Adaptive Avg Pool -->
-            <rect x="480" y="130" width="200" height="100" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
-            <text x="580" y="166" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Adaptive Avg Pool</text>
-            <text x="580" y="200" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#14213d">1024-dim features</text>
-            <line x1="680" y1="180" x2="720" y2="180" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
-
-            <!-- Feature Layer -->
-            <rect x="725" y="110" width="220" height="140" rx="12" fill="oklch(0.93 0.04 265)" stroke="oklch(0.62 0.1 265)"/>
-            <text x="835" y="144" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#14213d">Feature Layer</text>
-            <text x="835" y="174" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#14213d">Linear 1024→512</text>
-            <text x="835" y="196" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#14213d">ReLU</text>
-            <text x="835" y="218" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#14213d">Dropout(0.3)</text>
-
-            <line x1="945" y1="150" x2="990" y2="100" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
-            <line x1="945" y1="210" x2="990" y2="260" stroke="#2f3340" stroke-width="1.8" marker-end="url(#arrB)"/>
-
-            <!-- Multi-label -->
-            <rect x="995" y="30" width="460" height="120" rx="12" fill="oklch(0.55 0.13 155)" stroke="oklch(0.4 0.12 155)"/>
-            <text x="1225" y="68" text-anchor="middle" font-family="Inter" font-size="17" font-weight="700" fill="#fff">Multilabel Head</text>
-            <text x="1225" y="96" text-anchor="middle" font-family="Inter" font-size="14" fill="#fff">Linear 512→14</text>
-            <text x="1225" y="122" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#e8f3ec">sigmoid · 14 pathologies</text>
-
-            <!-- Binary -->
-            <rect x="995" y="210" width="460" height="120" rx="12" fill="oklch(0.52 0.17 245)" stroke="oklch(0.38 0.15 245)"/>
-            <text x="1225" y="248" text-anchor="middle" font-family="Inter" font-size="17" font-weight="700" fill="#fff">Binary Head</text>
-            <text x="1225" y="276" text-anchor="middle" font-family="Inter" font-size="14" fill="#fff">Linear 512→1</text>
-            <text x="1225" y="302" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#e6eefc">sigmoid · Normal/Abnormal</text>
-          </svg>
+        <div class="figure" style="min-height: 420px; padding: 26px 26px;">
+          <div id="deckfig-densenet" class="deckfig" style="width:100%;height:100%;"></div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 18px;">
@@ -519,45 +366,7 @@
       <p class="lede">Standard transfer-learning hygiene: a high learning rate for fresh heads destroys the pretrained backbone. We split training in two.</p>
 
       <div style="flex: 1; margin-top: 24px; display: flex; align-items: center; justify-content: center;">
-        <svg viewBox="0 0 1400 340" style="width:100%; max-height: 340px;" aria-label="Two-phase fine-tuning schedule">
-          <defs>
-            <marker id="arrF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f3340"/></marker>
-          </defs>
-
-          <!-- Phase 1 -->
-          <rect x="40" y="30" width="460" height="280" rx="12" fill="oklch(0.62 0.18 35)" stroke="oklch(0.48 0.16 35)"/>
-          <!-- Lock icon (closed) -->
-          <g transform="translate(80, 55)">
-            <path d="M8 14 v-4 a12 12 0 0 1 24 0 v4" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-            <rect x="0" y="14" width="40" height="28" rx="4" fill="#fff"/>
-            <circle cx="20" cy="28" r="3.5" fill="oklch(0.48 0.16 35)"/>
-          </g>
-          <text x="270" y="90" text-anchor="middle" font-family="Inter" font-size="32" font-weight="700" fill="#fff">Phase 1</text>
-          <text x="270" y="140" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">Epochs 1–5</text>
-          <text x="270" y="180" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">Backbone frozen</text>
-          <text x="270" y="218" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">Train heads only</text>
-          <text x="270" y="266" text-anchor="middle" font-family="JetBrains Mono" font-size="22" fill="#fff">lr = 0.001</text>
-
-          <!-- Transition arrow -->
-          <line x1="510" y1="170" x2="880" y2="170" stroke="#2f3340" stroke-width="2.5" marker-end="url(#arrF)"/>
-          <rect x="560" y="138" width="290" height="68" rx="12" fill="#ffffff" stroke="oklch(0.86 0.008 250)"/>
-          <text x="705" y="166" text-anchor="middle" font-family="Inter" font-size="17" font-weight="700" fill="#1a1d24">Epoch 6</text>
-          <text x="705" y="192" text-anchor="middle" font-family="JetBrains Mono" font-size="16" fill="#1a1d24">unfreeze_backbone()</text>
-
-          <!-- Phase 2 -->
-          <rect x="890" y="30" width="470" height="280" rx="12" fill="oklch(0.45 0.2 300)" stroke="oklch(0.32 0.18 300)"/>
-          <!-- Open lock -->
-          <g transform="translate(935, 55)">
-            <path d="M8 14 v-4 a12 12 0 0 1 22 -3" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-            <rect x="0" y="14" width="40" height="28" rx="4" fill="#fff"/>
-            <circle cx="20" cy="28" r="3.5" fill="oklch(0.45 0.2 300)"/>
-          </g>
-          <text x="1125" y="90" text-anchor="middle" font-family="Inter" font-size="32" font-weight="700" fill="#fff">Phase 2</text>
-          <text x="1125" y="140" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">Epochs 6–60</text>
-          <text x="1125" y="180" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">End-to-end fine-tuning</text>
-          <text x="1125" y="218" text-anchor="middle" font-family="Inter" font-size="22" fill="#fff">All layers trainable</text>
-          <text x="1125" y="266" text-anchor="middle" font-family="JetBrains Mono" font-size="22" fill="#fff">lr = 0.0001</text>
-        </svg>
+        <div id="deckfig-finetune" class="deckfig" style="width:100%;height:100%;"></div>
       </div>
 
       <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 28px; margin-top: 28px;">
@@ -583,92 +392,8 @@
       <h2 class="slide-title">From HF dataset snapshot to a tagged checkpoint on HF Hub.</h2>
 
       <div class="grid" style="grid-template-columns: 480px 1fr; gap: 56px; margin-top: 24px; flex: 1;">
-        <div class="figure" style="padding: 22px 24px; min-height: 620px;">
-          <svg viewBox="0 0 420 920" style="width:100%; height: 100%; max-height: 620px;" aria-label="Training pipeline flowchart">
-            <defs>
-              <marker id="arrP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6072"/></marker>
-            </defs>
-
-            <!-- Cylinder: Dataset -->
-            <g>
-              <ellipse cx="210" cy="28" rx="135" ry="14" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-              <path d="M75 28 V88 a135 14 0 0 0 270 0 V28" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-              <ellipse cx="210" cy="28" rx="135" ry="14" fill="none" stroke="oklch(0.6 0.15 300)"/>
-              <text x="210" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055" font-weight="600">arudaev/chest-xray-14-320</text>
-              <text x="210" y="66" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">112,120 images · 36 shards</text>
-              <text x="210" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">~7.97 GB</text>
-            </g>
-            <line x1="210" y1="102" x2="210" y2="130" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
-            <text x="218" y="122" font-family="JetBrains Mono" font-size="10" fill="#5b6072">snapshot_download</text>
-
-            <!-- Split -->
-            <rect x="75" y="132" width="270" height="70" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-            <text x="210" y="156" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055" font-weight="600">data/images · data/labels.csv</text>
-            <text x="210" y="180" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">train 78,468 · val 11,210</text>
-            <text x="210" y="194" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">test 22,442</text>
-            <line x1="210" y1="202" x2="210" y2="228" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
-
-            <!-- Augmentation -->
-            <rect x="75" y="230" width="270" height="94" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-            <text x="210" y="252" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">Augmentation Pipeline</text>
-            <text x="210" y="272" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">CLAHE · HFlip · Rotate±15°</text>
-            <text x="210" y="290" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">RandomAffine · ColorJitter</text>
-            <text x="210" y="308" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">GaussianBlur · RandomErasing</text>
-            <line x1="210" y1="324" x2="210" y2="352" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
-
-            <!-- Forward Pass -->
-            <rect x="75" y="354" width="270" height="64" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-            <text x="210" y="378" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">⚡ Model Forward Pass</text>
-            <text x="210" y="400" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">torch.cuda.amp.autocast · fp16</text>
-
-            <!-- Split into two heads -->
-            <line x1="210" y1="418" x2="210" y2="434" stroke="#5b6072" stroke-width="1.5"/>
-            <line x1="110" y1="434" x2="310" y2="434" stroke="#5b6072" stroke-width="1.5"/>
-            <line x1="110" y1="434" x2="110" y2="454" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
-            <line x1="310" y1="434" x2="310" y2="454" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
-
-            <!-- Multilabel logits -->
-            <rect x="20" y="456" width="180" height="78" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-            <text x="110" y="478" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055" font-weight="600">multilabel_logits B×14</text>
-            <text x="110" y="498" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2a1055">WeightedBCE + pos_weight</text>
-            <text x="110" y="516" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2a1055">14 classes</text>
-
-            <!-- Binary logits -->
-            <rect x="220" y="456" width="180" height="78" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-            <text x="310" y="478" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055" font-weight="600">binary_logits B×1</text>
-            <text x="310" y="498" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2a1055">BCE · Normal vs.</text>
-            <text x="310" y="516" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2a1055">Abnormal</text>
-
-            <!-- Merge arrows -->
-            <line x1="110" y1="534" x2="110" y2="556" stroke="#5b6072" stroke-width="1.5"/>
-            <line x1="310" y1="534" x2="310" y2="556" stroke="#5b6072" stroke-width="1.5"/>
-            <line x1="110" y1="556" x2="310" y2="556" stroke="#5b6072" stroke-width="1.5"/>
-            <line x1="210" y1="556" x2="210" y2="576" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
-
-            <!-- Combined loss -->
-            <rect x="75" y="578" width="270" height="64" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-            <text x="210" y="602" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">Combined Loss</text>
-            <text x="210" y="624" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">1.0 × multilabel + 0.5 × binary</text>
-            <line x1="210" y1="642" x2="210" y2="668" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
-
-            <!-- Backward -->
-            <rect x="75" y="670" width="270" height="64" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-            <text x="210" y="694" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">Backward · Grad Clip 1.0</text>
-            <text x="210" y="716" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">Grad Accum ×4 · eff. batch 96</text>
-            <line x1="210" y1="734" x2="210" y2="760" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
-
-            <!-- Optimizer -->
-            <rect x="75" y="762" width="270" height="62" rx="6" fill="oklch(0.92 0.05 300)" stroke="oklch(0.6 0.15 300)"/>
-            <text x="210" y="784" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#2a1055">AdamW · CosineAnnealingLR</text>
-            <text x="210" y="806" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2a1055">early stop patience = 15</text>
-            <line x1="210" y1="824" x2="210" y2="850" stroke="#5b6072" stroke-width="1.5" marker-end="url(#arrP)"/>
-            <text x="218" y="844" font-family="JetBrains Mono" font-size="10" fill="#5b6072">↑ best val AUC-ROC</text>
-
-            <!-- Checkpoint -->
-            <rect x="75" y="852" width="270" height="62" rx="6" fill="oklch(0.19 0.012 250)" stroke="oklch(0.19 0.012 250)"/>
-            <text x="210" y="876" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="oklch(0.78 0.13 60)">💾 Best Checkpoint → HF Hub</text>
-            <text x="210" y="898" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#e6eefc">model · config · history.json</text>
-          </svg>
+        <div class="figure" style="padding: 22px 24px; height: 680px;">
+          <div id="deckfig-pipeline" class="deckfig" style="width:100%;height:100%;"></div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 22px; padding-top: 8px;">
@@ -1097,6 +822,23 @@
   </section>
 
 </deck-stage>
+
+<script src="figures/figlib.js"></script>
+<script src="figures/deck_figs.js"></script>
+<script>
+/* ----------------- Deck figures (figlib) ----------------- */
+(function(){
+  function drawDeckFigs(){
+    try { window.drawDeckDualTask && drawDeckDualTask('deckfig-dualtask'); } catch(e){ console.error('dualtask', e); }
+    try { window.drawDeckSEResNet && drawDeckSEResNet('deckfig-seresnet'); } catch(e){ console.error('seresnet', e); }
+    try { window.drawDeckDenseNet && drawDeckDenseNet('deckfig-densenet'); } catch(e){ console.error('densenet', e); }
+    try { window.drawDeckFinetune && drawDeckFinetune('deckfig-finetune'); } catch(e){ console.error('finetune', e); }
+    try { window.drawDeckPipeline && drawDeckPipeline('deckfig-pipeline'); } catch(e){ console.error('pipeline', e); }
+  }
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(drawDeckFigs); }
+  drawDeckFigs();
+})();
+</script>
 
 <script>
 /* ----------------- Training curves SVG ----------------- */
