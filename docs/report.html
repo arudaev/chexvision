@@ -98,6 +98,12 @@
         <tr><td>LR schedule</td><td>Cosine annealing over the full epoch budget with a short warm-up, decaying smoothly towards zero for a stable final solution.</td></tr>
         <tr><td>Mixed precision</td><td>fp16 forward/backward with fp32 master weights: ~1.7× faster on T4/P100 and roughly half the memory, which makes 320-pixel training feasible in the free nine-hour Kaggle window.</td></tr>
         <tr><td>Grad. accumulation</td><td>Physical batch 24 over four steps gives an effective batch of 96, recovering large-batch stability despite 320-pixel memory cost.</td></tr>
+      </tbody>
+    </table>
+
+    <table class="tbl-tight">
+      <thead><tr><th style="width:27%">Component</th><th>Choice and justification</th></tr></thead>
+      <tbody>
         <tr><td>Grad. clipping</td><td>Global-norm clipping at 1.0, to stop the weighted, imbalanced loss from producing occasional exploding updates on rare-class batches.</td></tr>
         <tr><td>Reproducibility</td><td>One seed (42) across Python, NumPy, PyTorch, CUDA, with deterministic cuDNN. With the pinned dataset and frozen split, runs repeat.</td></tr>
       </tbody>
