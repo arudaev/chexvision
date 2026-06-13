@@ -8,14 +8,17 @@
     const baseline = 300;          // slab bottoms align here
     const aY = 262;                // level arrow height (inside every front face)
 
-    // ---- stage configs (spatial shrinks, channels grow) ----
+    // ---- stage configs (square spatial faces, channels grow as depth) ----
+    // Front face (w×h) is the SPATIAL map → square; side ∝ resolution
+    // (320→80→40→20→10). Stem & Stage 1 are both 80² → identical squares.
+    // depth ∝ channel count; the 3-channel input is a very thin slab.
     const stages = [
-      { x: 70,  w: 122, h: 150, depth: 0,  lvl: 0, name: 'Input',   sub: '',        shape: '320 × 320 × 3', img: true },
-      { x: 240, w: 60,  h: 122, depth: 16, lvl: 1, name: 'Stem',    sub: '7×7 s2 · pool', shape: '80² · 64', front: '' },
-      { x: 350, w: 70,  h: 122, depth: 18, lvl: 1, name: 'Stage 1', sub: '×3',       shape: '80² · 64',  front: '×3' },
-      { x: 470, w: 66,  h: 98,  depth: 28, lvl: 2, name: 'Stage 2', sub: '×4',       shape: '40² · 128', front: '×4', ds: true },
-      { x: 584, w: 62,  h: 76,  depth: 40, lvl: 3, name: 'Stage 3', sub: '×6',       shape: '20² · 256', front: '×6', ds: true },
-      { x: 694, w: 58,  h: 58,  depth: 52, lvl: 4, name: 'Stage 4', sub: '×3',       shape: '10² · 512', front: '×3', ds: true },
+      { x: 70,  w: 120, h: 120, depth: 8,  lvl: 0, name: 'Input',   sub: '',        shape: '320 × 320 × 3', img: true },
+      { x: 216, w: 88,  h: 88,  depth: 16, lvl: 1, name: 'Stem',    sub: '7×7 s2 · pool', shape: '80² · 64', front: '' },
+      { x: 338, w: 88,  h: 88,  depth: 16, lvl: 1, name: 'Stage 1', sub: '×3',       shape: '80² · 64',  front: '×3' },
+      { x: 460, w: 70,  h: 70,  depth: 26, lvl: 2, name: 'Stage 2', sub: '×4',       shape: '40² · 128', front: '×4', ds: true },
+      { x: 574, w: 54,  h: 54,  depth: 38, lvl: 3, name: 'Stage 3', sub: '×6',       shape: '20² · 256', front: '×6', ds: true },
+      { x: 684, w: 42,  h: 42,  depth: 50, lvl: 4, name: 'Stage 4', sub: '×3',       shape: '10² · 512', front: '×3', ds: true },
     ];
 
     // top bracket over the four residual stages
