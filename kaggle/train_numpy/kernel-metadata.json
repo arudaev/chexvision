@@ -1,5 +1,5 @@
 {
-  "id": "hlexnc/chexvision-train-numpy",
+  "id": "hlexnc/chexvision-train-numpy-from-scratch",
   "title": "CheXVision Train NumPy From-Scratch",
   "code_file": "script.py",
   "language": "python",

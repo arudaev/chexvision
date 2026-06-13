@@ -53,8 +53,13 @@ os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 sys.path.insert(0, str(REPO_DIR / "src" / "numpy_net"))
 
 # ---------------------------------------------------------------------------
-# 3. Train (full pipeline) and upload artifacts to HF.
+# 3. Train, then upload artifacts to HF.
+#    The mini's train.py is upload-free by design (writes to --output-dir);
+#    the caller (this kernel) performs the HF upload via the mini's hub helper.
 # ---------------------------------------------------------------------------
+from chexvision_mini.hub import upload_results  # noqa: E402
 from chexvision_mini.train import main  # noqa: E402
 
-main(["--mode", "kaggle", "--upload", "--output-dir", "/kaggle/working/artifacts"])
+ARTIFACTS = "/kaggle/working/artifacts"
+main(["--mode", "kaggle", "--output-dir", ARTIFACTS])
+upload_results(ARTIFACTS, "arudaev/chexvision-mini")

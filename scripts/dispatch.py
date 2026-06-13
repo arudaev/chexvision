@@ -44,7 +44,7 @@ KERNEL_SLUGS = {
     "scratch":    "hlexnc/chexvision-train-scratch-cnn",
     "transfer":   "hlexnc/chexvision-train-densenet-transfer",
     "resize_320": "hlexnc/chexvision-resize-320",
-    "numpy":      "hlexnc/chexvision-train-numpy",
+    "numpy":      "hlexnc/chexvision-train-numpy-from-scratch",
 }
 
 
