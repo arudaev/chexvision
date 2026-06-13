@@ -35,6 +35,8 @@ KERNEL_DIRS = {
     "scratch":    Path("kaggle/train_scratch"),
     "transfer":   Path("kaggle/train_transfer"),
     "resize_320": Path("kaggle/resize_320"),
+    # From-scratch NumPy net (chexvision-mini submodule at src/numpy_net). CPU-only.
+    "numpy":      Path("kaggle/train_numpy"),
 }
 
 # Kaggle kernel slugs (must match the "id" in kernel-metadata.json).
@@ -42,6 +44,7 @@ KERNEL_SLUGS = {
     "scratch":    "hlexnc/chexvision-train-scratch-cnn",
     "transfer":   "hlexnc/chexvision-train-densenet-transfer",
     "resize_320": "hlexnc/chexvision-resize-320",
+    "numpy":      "hlexnc/chexvision-train-numpy",
 }
 
 
@@ -234,7 +237,7 @@ def main() -> None:
     kaggle_parser = subparsers.add_parser("kaggle", help="Kaggle kernel operations")
     kaggle_sub = kaggle_parser.add_subparsers(dest="action", help="Action to perform")
 
-    _all_kernels = ["scratch", "transfer", "resize_320"]
+    _all_kernels = ["scratch", "transfer", "resize_320", "numpy"]
 
     # kaggle push (default when just model name given)
     push_parser = kaggle_sub.add_parser("push", help="Push kernel to Kaggle")
@@ -283,7 +286,7 @@ def main() -> None:
 
 def _preprocess_argv() -> None:
     """Rewrite argv so that `kaggle <model>` becomes `kaggle push <model>`."""
-    model_names = {"scratch", "transfer", "resize_320"}
+    model_names = {"scratch", "transfer", "resize_320", "numpy"}
     # Pattern: script kaggle <model>  (3 args after script name, 2nd is kaggle, 3rd is model)
     if len(sys.argv) >= 3 and sys.argv[1] == "kaggle" and sys.argv[2] in model_names:
         # Insert "push" between "kaggle" and the model name

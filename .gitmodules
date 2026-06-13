@@ -1,0 +1,3 @@
+[submodule "src/numpy_net"]
+	path = src/numpy_net
+	url = https://github.com/arudaev/chexvision-mini.git
