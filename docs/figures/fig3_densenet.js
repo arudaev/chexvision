@@ -5,19 +5,23 @@
   window.drawFig3 = function (id) {
     const f = FL, C = f.C;
     let s = '';
-    const baseline = 300, aY = 262;
+    const baseline = 300, aY = 282;
 
-    // input + stem + 4 dense blocks + 3 transitions
+    // input + stem + 4 dense blocks + 3 transitions.
+    // Square front faces: side ∝ spatial resolution (320→80→40→20→10); each
+    // dense block shares its resolution-stage side with the transition out of
+    // it. Transitions are full output-size squares (not thin plates) so the
+    // spatial halving reads; depth ∝ channels, so transitions get shallower.
     const stages = [
-      { x: 70,  w: 120, h: 150, depth: 0,  lvl: 0, name: 'Input', sub: '', shape: '320 × 320 × 3', img: true },
-      { x: 238, w: 48,  h: 122, depth: 14, lvl: 1, name: 'Stem',  sub: '7×7 s2·pool', shape: '80² · 64' },
-      { x: 320, w: 58,  h: 122, depth: 20, lvl: 2, name: 'Dense block 1', sub: '×6',  shape: '80² · 256', front: '×6', dense: true },
-      { x: 408, w: 22,  h: 98,  depth: 26, lvl: 2, name: 'Trans', sub: '↓2', shape: '40² · 128', trans: true },
-      { x: 470, w: 56,  h: 98,  depth: 28, lvl: 3, name: 'Dense block 2', sub: '×12', shape: '40² · 512', front: '×12', dense: true },
-      { x: 558, w: 22,  h: 76,  depth: 38, lvl: 3, name: 'Trans', sub: '↓2', shape: '20² · 256', trans: true },
-      { x: 618, w: 54,  h: 76,  depth: 42, lvl: 4, name: 'Dense block 3', sub: '×24', shape: '20² · 1024', front: '×24', dense: true },
-      { x: 704, w: 22,  h: 58,  depth: 48, lvl: 4, name: 'Trans', sub: '↓2', shape: '10² · 512', trans: true },
-      { x: 762, w: 52,  h: 58,  depth: 54, lvl: 5, name: 'Dense block 4', sub: '×16', shape: '10² · 1024', front: '×16', dense: true },
+      { x: 70,  w: 86, h: 86, depth: 6,  lvl: 0, name: 'Input', sub: '', shape: '320 × 320 × 3', img: true },
+      { x: 168, w: 64, h: 64, depth: 12, lvl: 1, name: 'Stem',  sub: '7×7 s2·pool', shape: '80² · 64' },
+      { x: 250, w: 64, h: 64, depth: 28, lvl: 2, name: 'Dense block 1', sub: '×6',  shape: '80² · 256', front: '×6', dense: true },
+      { x: 348, w: 50, h: 50, depth: 18, lvl: 2, name: 'Trans', sub: '↓2', shape: '40² · 128', trans: true },
+      { x: 422, w: 50, h: 50, depth: 36, lvl: 3, name: 'Dense block 2', sub: '×12', shape: '40² · 512', front: '×12', dense: true },
+      { x: 514, w: 40, h: 40, depth: 26, lvl: 3, name: 'Trans', sub: '↓2', shape: '20² · 256', trans: true },
+      { x: 586, w: 40, h: 40, depth: 46, lvl: 4, name: 'Dense block 3', sub: '×24', shape: '20² · 1024', front: '×24', dense: true },
+      { x: 678, w: 32, h: 32, depth: 34, lvl: 4, name: 'Trans', sub: '↓2', shape: '10² · 512', trans: true },
+      { x: 750, w: 32, h: 32, depth: 44, lvl: 5, name: 'Dense block 4', sub: '×16', shape: '10² · 1024', front: '×16', dense: true },
     ];
 
     // backbone bracket

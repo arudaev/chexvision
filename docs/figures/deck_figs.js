@@ -64,14 +64,16 @@
   global.drawDeckDualTask = function (id) {
     const W = 1860, H = 666;
     let s = '';
-    const baseline = 470, aY = 380;
+    const baseline = 470, aY = 446;
 
+    // Front face (w×h) is the SPATIAL map → kept square; side ∝ resolution
+    // (320,80,40,20,10), monotonically shrinking. depth ∝ channel count.
     const stack = [
-      { x: 70,  w: 150, h: 252, depth: 0,  lvl: 0, img: true, shape: '3 × 320 × 320' },
-      { x: 306, w: 90,  h: 206, depth: 26, lvl: 1, shape: '80² · 64' },
-      { x: 448, w: 78,  h: 158, depth: 40, lvl: 2, shape: '40² · 128' },
-      { x: 572, w: 68,  h: 120, depth: 52, lvl: 3, shape: '20² · 256' },
-      { x: 686, w: 62,  h: 88,  depth: 64, lvl: 4, shape: '10² · 512' },
+      { x: 70,  w: 144, h: 144, depth: 8,  lvl: 0, img: true, shape: '3 × 320 × 320' },
+      { x: 244, w: 108, h: 108, depth: 26, lvl: 1, shape: '80² · 64' },
+      { x: 400, w: 84,  h: 84,  depth: 40, lvl: 2, shape: '40² · 128' },
+      { x: 546, w: 66,  h: 66,  depth: 52, lvl: 3, shape: '20² · 256' },
+      { x: 686, w: 50,  h: 50,  depth: 64, lvl: 4, shape: '10² · 512' },
     ];
 
     s += f.bracketT(stack[1].x, stack[4].x + stack[4].w, 112,
@@ -158,15 +160,17 @@
   global.drawDeckSEResNet = function (id) {
     const W = 1300, H = 677;
     let s = '';
-    const baseline = 286, aY = 226;
+    const baseline = 286, aY = 262;
 
+    // Square front faces: side ∝ spatial resolution (320→80→40→20→10),
+    // Stem & Stage 1 share 80² so share a side. depth ∝ channels.
     const stages = [
-      { x: 58,  w: 120, h: 170, depth: 0,  lvl: 0, img: true, shape: '320² · 3' },
-      { x: 250, w: 56,  h: 150, depth: 16, lvl: 1, shape: '80² · 64' },
-      { x: 372, w: 78,  h: 150, depth: 18, lvl: 1, front: '×3', shape: '80² · 64' },
-      { x: 520, w: 72,  h: 120, depth: 28, lvl: 2, front: '×4', ds: true, shape: '40² · 128' },
-      { x: 664, w: 66,  h: 92,  depth: 40, lvl: 3, front: '×6', ds: true, shape: '20² · 256' },
-      { x: 800, w: 60,  h: 70,  depth: 52, lvl: 4, front: '×3', ds: true, shape: '10² · 512' },
+      { x: 58,  w: 132, h: 132, depth: 8,  lvl: 0, img: true, shape: '320² · 3' },
+      { x: 234, w: 96,  h: 96,  depth: 18, lvl: 1, shape: '80² · 64' },
+      { x: 384, w: 96,  h: 96,  depth: 18, lvl: 1, front: '×3', shape: '80² · 64' },
+      { x: 534, w: 76,  h: 76,  depth: 30, lvl: 2, front: '×4', ds: true, shape: '40² · 128' },
+      { x: 676, w: 60,  h: 60,  depth: 44, lvl: 3, front: '×6', ds: true, shape: '20² · 256' },
+      { x: 816, w: 46,  h: 46,  depth: 60, lvl: 4, front: '×3', ds: true, shape: '10² · 512' },
     ];
 
     s += f.bracketT(stages[2].x, stages[5].x + stages[5].w, 70,
@@ -214,18 +218,22 @@
   global.drawDeckDenseNet = function (id) {
     const W = 1300, H = 620;
     let s = '';
-    const baseline = 268, aY = 214;
+    const baseline = 268, aY = 250;
 
+    // Square front faces: side ∝ spatial resolution. Each dense block and the
+    // transition OUT of it share a resolution-stage side (80,40,20,10 from the
+    // shape labels). Transitions are full squares (not thin plates) so the
+    // spatial halving reads; their depth shrinks as they reduce channels.
     const stages = [
-      { x: 52,  w: 104, h: 158, depth: 0,  lvl: 0, img: true, name: 'Input', shape: '320² · 3' },
-      { x: 214, w: 46,  h: 140, depth: 14, lvl: 1, name: 'Stem',  shape: '80² · 64' },
-      { x: 300, w: 54,  h: 140, depth: 20, lvl: 2, name: 'Dense 1', sub: '×6',  front: '×6',  shape: '80² · 256' },
-      { x: 384, w: 20,  h: 112, depth: 26, lvl: 2, trans: true, shape: '40² · 128' },
-      { x: 442, w: 52,  h: 112, depth: 28, lvl: 3, name: 'Dense 2', sub: '×12', front: '×12', shape: '40² · 512' },
-      { x: 524, w: 20,  h: 86,  depth: 38, lvl: 3, trans: true, shape: '20² · 256' },
-      { x: 582, w: 50,  h: 86,  depth: 42, lvl: 4, name: 'Dense 3', sub: '×24', front: '×24', shape: '20² · 1024' },
-      { x: 664, w: 20,  h: 64,  depth: 48, lvl: 4, trans: true, shape: '10² · 512' },
-      { x: 720, w: 48,  h: 64,  depth: 54, lvl: 5, name: 'Dense 4', sub: '×16', front: '×16', shape: '10² · 1024' },
+      { x: 52,  w: 88, h: 88, depth: 6,  lvl: 0, img: true, name: 'Input', shape: '320² · 3' },
+      { x: 158, w: 66, h: 66, depth: 14, lvl: 1, name: 'Stem',  shape: '80² · 64' },
+      { x: 250, w: 66, h: 66, depth: 30, lvl: 2, name: 'Dense 1', sub: '×6',  front: '×6',  shape: '80² · 256' },
+      { x: 358, w: 52, h: 52, depth: 22, lvl: 2, trans: true, shape: '40² · 128' },
+      { x: 444, w: 52, h: 52, depth: 40, lvl: 3, name: 'Dense 2', sub: '×12', front: '×12', shape: '40² · 512' },
+      { x: 548, w: 42, h: 42, depth: 30, lvl: 3, trans: true, shape: '20² · 256' },
+      { x: 632, w: 42, h: 42, depth: 50, lvl: 4, name: 'Dense 3', sub: '×24', front: '×24', shape: '20² · 1024' },
+      { x: 736, w: 34, h: 34, depth: 40, lvl: 4, trans: true, shape: '10² · 512' },
+      { x: 822, w: 34, h: 34, depth: 50, lvl: 5, name: 'Dense 4', sub: '×16', front: '×16', shape: '10² · 1024' },
     ];
 
     s += f.bracketT(stages[1].x, stages[8].x + stages[8].w, 70,
@@ -253,7 +261,7 @@
     }
 
     // adaptive pool
-    const px = 812, pw = 120, ph = 92, py = baseline - ph;
+    const px = 918, pw = 120, ph = 92, py = baseline - ph;
     s += f.arrow(stages[8].x + stages[8].w + 4, aY, px - 6, py + ph / 2, { color: C.ink2, width: 1.9 });
     s += f.box(px, py, pw, ph, { stroke: C.hair, fill: '#fbfcfe', r: 12 });
     s += f.lines(px + pw / 2, py + 36, [
@@ -263,7 +271,7 @@
     s += f.T(px + pw / 2, py + ph - 12, '1024-d', { size: 12.5, mono: true, fill: C.mut, weight: 600 });
 
     // feature layer
-    const flx = 972, flw = 176, flh = 104, fly = baseline - flh;
+    const flx = 1058, flw = 176, flh = 104, fly = baseline - flh;
     s += f.arrow(px + pw + 4, py + ph / 2, flx - 6, fly + flh / 2, { color: C.ink2, width: 1.9 });
     s += f.box(flx, fly, flw, flh, { stroke: C.hair, accent: C.blue, fill: '#fafcff', r: 12 });
     s += f.T(flx + flw / 2 + 4, fly + 34, 'Feature layer', { size: 16, weight: 700, fill: C.ink });
