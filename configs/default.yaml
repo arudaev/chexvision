@@ -60,7 +60,7 @@ training:
   use_amp: true
 
   # Gradient accumulation — effective_batch = batch_size × grad_accum_steps
-  # 32 × 4 = 128 effective batch size for stable training
+  # 24 × 4 = 96 effective batch size for stable training
   grad_accum_steps: 4
 
   # Task weights for combined loss

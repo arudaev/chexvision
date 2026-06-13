@@ -52,4 +52,4 @@ training:
   warmup_epochs: 3
   early_stopping_patience: 15  # Allow Phase 2 to fully converge before stopping
   use_amp: true
-  grad_accum_steps: 4          # Effective batch: 32 × 4 = 128
+  grad_accum_steps: 4          # Effective batch: 24 × 4 = 96
