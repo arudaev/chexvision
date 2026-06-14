@@ -148,9 +148,11 @@ chexvision/
 │   │   ├── trainer.py            # Training loop, YAML config merging, history logging
 │   │   ├── metrics.py            # AUC-ROC, F1, combine_losses
 │   │   └── evaluate.py           # Post-training evaluation and comparison
-│   └── utils/
-│       ├── hub.py                # HF token resolution, upload_model_artifacts, model card
-│       └── visualization.py      # Grad-CAM, ROC curves, training history plots
+│   ├── utils/
+│   │   ├── hub.py                # HF token resolution, upload_model_artifacts, model card
+│   │   └── visualization.py      # Grad-CAM, ROC curves, training history plots
+│   └── numpy_net/               # git submodule → arudaev/chexvision-mini
+│                                #   pure-NumPy from-scratch MLP (package: chexvision_mini)
 ├── scripts/
 │   ├── eda.py                    # EDA — streams metadata from HF, saves plots locally
 │   ├── dispatch.py               # Dispatch Kaggle kernels; build + embed project bundle
@@ -158,7 +160,8 @@ chexvision/
 │   └── generate_diagram_pngs.py  # Render Mermaid diagrams → PNG via Playwright
 ├── kaggle/
 │   ├── train_scratch/            # Kernel: custom CNN (script.py + kernel-metadata.json)
-│   └── train_transfer/           # Kernel: DenseNet-121 (script.py + kernel-metadata.json)
+│   ├── train_transfer/           # Kernel: DenseNet-121 (script.py + kernel-metadata.json)
+│   └── train_numpy/              # Kernel: from-scratch NumPy net (CPU; chexvision_mini)
 ├── configs/
 │   ├── default.yaml              # Base hyperparameters inherited by all configs
 │   ├── scratch.yaml              # Overrides for custom CNN
@@ -283,7 +286,7 @@ Both models share the same input pipeline and training regularisation:
 - **CLAHE** (Contrast Limited Adaptive Histogram Equalisation): applied in LAB colour space before any augmentation — enhances local contrast for low-contrast findings (Nodule, Infiltration, Pneumonia) without global brightness shifts
 - **Label smoothing** (ε = 0.1): positive targets → 0.9, negative targets → 0.05 — regularises against noisy NIH patient-level labels
 
-### Model 1 — Custom CNN (From Scratch)
+### Model 1 — Custom CNN (Trained from Random Init)
 
 A ResNet-50-equivalent architecture built without any pretrained weights:
 
