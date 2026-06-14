@@ -27,8 +27,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BUNDLE_ROOT = PROJECT_ROOT / ".build_tmp" / "kaggle"
 BUNDLE_PATHS = (Path("src"), Path("configs"))
 BUNDLE_SENTINEL = "__CHEXVISION_PROJECT_BUNDLE_B64__"
-EXCLUDED_BUNDLE_DIRS = {"__pycache__", ".pytest_cache"}
-EXCLUDED_BUNDLE_SUFFIXES = {".pyc", ".pyo"}
+EXCLUDED_BUNDLE_DIRS = {"__pycache__", ".pytest_cache", ".git", ".github"}
+# Skip bytecode and large binaries (e.g. the NNSP reference PDF committed into the
+# numpy_net submodule) — they bloat the base64 payload injected into the kernel.
+EXCLUDED_BUNDLE_SUFFIXES = {".pyc", ".pyo", ".pdf"}
 
 # Map short model names to kernel directory paths (relative to repo root).
 KERNEL_DIRS = {
