@@ -43,8 +43,16 @@ We implement and compare two deep learning approaches on two distinct tasks:
 | | Task 1: Multi-Label Classification | Task 2: Binary Classification |
 |---|---|---|
 | **What** | Detect all 14 pathologies simultaneously | Normal vs. Abnormal screening |
-| **Model 1** | Custom ResNet-style CNN (from scratch) | Same backbone, binary head |
+| **Model 1** | Custom ResNet-style CNN (trained from random init, PyTorch) | Same backbone, binary head |
 | **Model 2** | DenseNet-121 transfer learning (CheXNet) | Same backbone, binary head |
+
+> **A third, "true from-scratch" model** lives in the [`src/numpy_net`](src/numpy_net) git
+> submodule ([`arudaev/chexvision-mini`](https://github.com/arudaev/chexvision-mini)): a pure-NumPy
+> MLP with hand-written forward and backprop — **no PyTorch, no autograd, CPU-only** — for the binary
+> task. It is a *fundamentals* model (it demonstrates the underlying maths, verified by gradient
+> checking; it does not chase headline accuracy). Terminology note: Model 1 is "from scratch" in the
+> sense of *trained from random init* (still PyTorch); the NumPy net is "from scratch" in the sense of
+> *no framework at all*. See its [model card](https://huggingface.co/arudaev/chexvision-mini).
 
 ### Why This Matters
 

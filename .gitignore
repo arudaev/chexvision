@@ -25,6 +25,9 @@ node_modules/
 # Local scratch space
 .build_tmp/
 
+# Downloaded Kaggle kernel outputs
+kaggle_output/
+
 # Jupyter
 .ipynb_checkpoints/
 
