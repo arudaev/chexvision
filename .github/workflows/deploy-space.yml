@@ -27,7 +27,16 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
+          # Build a SINGLE orphan commit containing only what the Space needs.
+          # Pushing the full history would ship the repo's binary files (docs/ PNGs
+          # and reference PDFs), which HF's pre-receive hook now rejects (XET rule).
+          # An orphan commit has no history, so only this clean tree is scanned.
+          git checkout --orphan hf-deploy
+          git reset
+          git add app src README.md requirements.txt Dockerfile
+          [ -f .dockerignore ] && git add .dockerignore || true
+          # The app does not use the from-scratch NumPy net; drop its submodule gitlink.
+          git rm -r --cached --ignore-unmatch src/numpy_net
+          git commit -m "ci: deploy app to HF Space"
           git remote add hf https://arudaev:${HF_TOKEN}@huggingface.co/spaces/arudaev/chexvision-demo || true
-          git rm -r --cached docs/ scripts/ tests/ kaggle/ configs/ 2>/dev/null || true
-          git commit -m "ci: strip non-app dirs for HF Space" --allow-empty
-          git push hf HEAD:main --force
+          git push hf hf-deploy:main --force
