@@ -154,6 +154,36 @@ def _safe_metric(history: dict[str, Any] | None, key: str) -> float | None:
     return float(max(values))
 
 
+# CheXNet (Rajpurkar et al., 2017) reported this macro AUC-ROC on a comparable split.
+CHEXNET_BENCHMARK_AUC = 0.841
+
+
+def _benchmark_comparison(model_name: str, model_type: str, best_auc: Any) -> str:
+    """Honest one-line comparison of this model's macro AUC against the CheXNet benchmark.
+
+    Rendered per-model: only DenseNet shares CheXNet's transfer-learning setup, while the
+    scratch network is framed as approaching the benchmark without pretrained weights.
+    """
+    if not isinstance(best_auc, (int, float)):
+        return f"{model_name}'s macro AUC-ROC will be reported here after the first successful run."
+
+    gap = CHEXNET_BENCHMARK_AUC - float(best_auc)
+    if gap <= 0:
+        relation = f"matches this benchmark, reaching **{best_auc:.4f}** macro AUC-ROC"
+    else:
+        relation = f"reaches **{best_auc:.4f}** macro AUC-ROC — within **{gap:.3f}** of this benchmark"
+
+    if model_type == "densenet":
+        return (
+            f"{model_name} {relation} on the validation split, trained at 320×320 resolution "
+            f"with an added binary head under a fixed Kaggle GPU budget."
+        )
+    return (
+        f"{model_name}, a custom residual SE-network trained **from scratch with no pretrained "
+        f"weights**, {relation}."
+    )
+
+
 def _architecture_summary(config: dict[str, Any]) -> str:
     """Produce a short human-readable architecture summary."""
     model_cfg = config.get("model", {})
@@ -364,6 +394,9 @@ def render_model_card(
     # --- Architecture summary line ---
     arch_summary = _architecture_summary(config)
 
+    # --- Benchmark comparison (per-model, derived from this run's best AUC) ---
+    benchmark_comparison = _benchmark_comparison(model_name, model_type, best_auc)
+
     # --- AMP / training details ---
     use_amp = train_cfg.get("use_amp", False)
     use_clahe = data_cfg.get("clahe", False)
@@ -451,7 +484,7 @@ It outputs two predictions per image:
 
 CheXNet (Rajpurkar et al., 2017) — the seminal paper establishing DenseNet-121 for chest X-ray
 classification — reported **0.841 macro AUC-ROC** on a comparable split of this dataset.
-CheXVision-DenseNet matches this benchmark. See the
+{benchmark_comparison} See the
 [CheXVision demo]({DEMO_SPACE_URL}) for live inference, or the
 [presentation deck]({PRESENTATION_DECK_URL}) for the project walkthrough.
 
