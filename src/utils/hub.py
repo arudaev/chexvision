@@ -200,8 +200,32 @@ def _architecture_summary(config: dict[str, Any]) -> str:
     )
 
 
+# HF Hub does not render Mermaid in model cards, so the card embeds pre-rendered
+# PNGs instead. The PNGs are produced from the Mermaid _render_* helpers below by
+# scripts/generate_diagram_pngs.py and committed once to each model repo; the card
+# references them by their stable resolve/main URL. Display widths match that
+# script so the live cards and any regenerated PNGs stay visually consistent.
+_DIAGRAM_DISPLAY_WIDTHS = {
+    "arch_scratch.png": "88%",
+    "arch_densenet.png": "88%",
+    "finetuning_densenet.png": "62%",
+    "pipeline_training.png": "42%",
+}
+
+
+def _diagram_img(repo_id: str, filename: str, alt: str) -> str:
+    """Centred <img> embed for a pre-rendered diagram PNG committed to the repo."""
+    width = _DIAGRAM_DISPLAY_WIDTHS.get(filename, "80%")
+    url = f"https://huggingface.co/{repo_id}/resolve/main/{filename}"
+    return f'<p align="center">\n  <img src="{url}" width="{width}" alt="{alt}"/>\n</p>'
+
+
 def _render_pipeline_diagram() -> str:
-    """Mermaid flowchart of the full data→train→upload pipeline."""
+    """Mermaid flowchart of the full data→train→upload pipeline.
+
+    Retained as the source for scripts/generate_diagram_pngs.py; the model card
+    embeds the rendered PNG via _diagram_img rather than this Mermaid block.
+    """
     return """```mermaid
 flowchart TD
     DS[("🗄️ arudaev/chest-xray-14-320\n112,120 images · 36 shards · ~7.97 GB")]
@@ -365,11 +389,11 @@ def render_model_card(
         else "- Metrics will appear after the first successful training run."
     )
 
-    # --- Architecture diagram ---
+    # --- Architecture diagram (pre-rendered PNG; HF Hub can't render Mermaid) ---
     if model_type == "densenet":
-        arch_diagram = _render_densenet_architecture()
+        arch_diagram = _diagram_img(repo_id, "arch_densenet.png", "DenseNet-121 architecture")
     else:
-        arch_diagram = _render_scratch_architecture(config)
+        arch_diagram = _diagram_img(repo_id, "arch_scratch.png", "SE-ResNet architecture")
 
     # --- Fine-tuning diagram (DenseNet only) ---
     finetuning_section = ""
@@ -377,7 +401,7 @@ def render_model_card(
         finetuning_section = f"""
 ## Fine-Tuning Strategy
 
-{_render_densenet_finetuning(config)}
+{_diagram_img(repo_id, "finetuning_densenet.png", "Two-phase fine-tuning schedule")}
 """
 
     # --- Per-class AUC table ---
@@ -450,7 +474,7 @@ datasets:
 {finetuning_section}
 ## Training Pipeline
 
-{_render_pipeline_diagram()}
+{_diagram_img(repo_id, "pipeline_training.png", "Training pipeline")}
 
 ## Training Metrics
 
