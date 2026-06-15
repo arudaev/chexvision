@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -22,6 +23,46 @@ DATASET_ALLOW_PATTERNS = [
     "data/*.parquet",
 ]
 SNAPSHOT_DIR_ENV = "CHEXVISION_HF_SNAPSHOT_DIR"
+
+# The 320px shards are large (hundreds of MB) and Xet-backed; the HTTP bridge
+# occasionally closes a stream mid-file ("peer closed connection without sending
+# complete message body"). snapshot_download keeps a partial .incomplete file and
+# resumes via HTTP Range, so retrying makes forward progress instead of failing
+# the whole training run on a single transient drop.
+SNAPSHOT_MAX_ATTEMPTS = 8
+SNAPSHOT_RETRY_BACKOFF_SECONDS = 5
+
+# Substrings of exception type names that indicate a transient transport failure
+# worth retrying (vs. auth/not-found errors, which are re-raised immediately).
+_RETRYABLE_ERROR_NAMES = (
+    "RemoteProtocolError",
+    "ProtocolError",
+    "ChunkedEncodingError",
+    "IncompleteRead",
+    "ConnectionError",
+    "ConnectionResetError",
+    "ReadTimeout",
+    "ConnectTimeout",
+    "Timeout",
+    "ReadError",
+    "WriteError",
+    "PoolTimeout",
+)
+
+
+def _is_retryable_download_error(exc: BaseException) -> bool:
+    """Return True when *exc* (or any error in its chain) is a transient drop."""
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if any(name in type(current).__name__ for name in _RETRYABLE_ERROR_NAMES):
+            return True
+        # "peer closed connection" surfaces from several layers with varying types.
+        if "peer closed connection" in str(current).lower():
+            return True
+        current = current.__cause__ or current.__context__
+    return False
 
 
 def _dataset_features():
@@ -60,16 +101,40 @@ def _snapshot_dataset_repo(
 
     snapshot_dir = Path(snapshot_dir)
     snapshot_dir.mkdir(parents=True, exist_ok=True)
-    return Path(
-        snapshot_download(
-            repo_id=repo_id,
-            repo_type="dataset",
-            revision=revision,
-            local_dir=str(snapshot_dir),
-            allow_patterns=DATASET_ALLOW_PATTERNS,
-            token=token,
-        )
-    )
+
+    last_exc: BaseException | None = None
+    for attempt in range(1, SNAPSHOT_MAX_ATTEMPTS + 1):
+        try:
+            # snapshot_download is idempotent: completed shards are skipped and
+            # partial ones resume from their .incomplete file, so each retry
+            # continues the download rather than restarting from zero.
+            return Path(
+                snapshot_download(
+                    repo_id=repo_id,
+                    repo_type="dataset",
+                    revision=revision,
+                    local_dir=str(snapshot_dir),
+                    allow_patterns=DATASET_ALLOW_PATTERNS,
+                    token=token,
+                )
+            )
+        except Exception as exc:  # noqa: BLE001 - re-raised below when not transient
+            last_exc = exc
+            if attempt >= SNAPSHOT_MAX_ATTEMPTS or not _is_retryable_download_error(exc):
+                raise
+            wait_seconds = SNAPSHOT_RETRY_BACKOFF_SECONDS * attempt
+            logger.warning(
+                "Dataset download interrupted (attempt %d/%d): %s. "
+                "Resuming in %ds ...",
+                attempt,
+                SNAPSHOT_MAX_ATTEMPTS,
+                exc,
+                wait_seconds,
+            )
+            time.sleep(wait_seconds)
+
+    # Unreachable: the loop either returns or raises, but keep mypy/readers happy.
+    raise RuntimeError("Dataset snapshot download failed") from last_exc
 
 
 def _load_streaming_dataset(snapshot_dir: Path):
