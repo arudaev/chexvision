@@ -67,17 +67,17 @@ We implement and compare two deep learning approaches on two distinct tasks:
 
 | Metric | Model 1 · Custom CNN | Model 2 · DenseNet-121 | Δ |
 |--------|----------------------|------------------------|---|
-| Multi-label macro AUC-ROC *(primary)* | 0.8008 | **0.8459** | +0.045 |
-| Binary AUC (Normal vs Abnormal) | 0.7571 | **0.7867** | +0.030 |
-| Binary F1 | 0.6474 | **0.6736** | +0.026 |
-| Best checkpoint epoch | 60 | **18** | −42 |
+| Multi-label macro AUC-ROC *(primary)* | 0.8141 | **0.8459** | +0.032 |
+| Binary AUC (Normal vs Abnormal) | 0.7739 | **0.7867** | +0.013 |
+| Binary F1 | 0.6587 | **0.6736** | +0.015 |
+| Best checkpoint epoch | 41 | **18** | −23 |
 | Trainable parameters | ≈23 M | ≈7.9 M | — |
 
-*Validation split at each model's best checkpoint. CheXNet reference (Rajpurkar et al., 2017): 0.841 macro AUC-ROC.*
+*Validation split at each model's best checkpoint. CheXNet reference (Rajpurkar et al., 2017): 0.841 macro AUC-ROC. Both models trained with identical preprocessing (CLAHE + label smoothing ε=0.1).*
 
 **Per-class AUC-ROC (DenseNet-121):** strongest on high-contrast, globally-shaped findings — Edema 0.926, Hernia 0.924, Emphysema 0.911, Cardiomegaly 0.901; weakest on diffuse, label-noisy findings — Pneumonia 0.740, Infiltration 0.713. Both models follow the same class-difficulty ranking, indicating the ceiling is set by data quality, not architecture.
 
-The transfer-learned DenseNet surpasses the CheXNet reference and converges 3× faster while training fewer parameters. The from-scratch model (0.801 macro AUC) provides a controlled baseline for quantifying the value of ImageNet pretraining on medical imagery.
+The transfer-learned DenseNet surpasses the CheXNet reference and converges 2.3× faster while training fewer parameters. The from-scratch model (0.814 macro AUC) provides a controlled baseline under identical preprocessing, quantifying the value of ImageNet pretraining on medical imagery.
 
 ---
 

@@ -26,7 +26,7 @@
 
     <div class="abstract span">
       <div class="lead">Abstract</div>
-      <p>Chest radiography is among the most common diagnostic imaging exams worldwide, yet expert interpretation remains slow, costly, and unevenly available. The NIH ChestX-ray14 database — 112,120 frontal radiographs from 30,805 patients, each weakly labelled with up to fourteen thoracic pathologies mined from radiology reports — makes it possible to study image-level pathology classification at hospital scale. We implement and compare two convolutional networks under a single fixed protocol: a residual CNN with Squeeze-and-Excitation attention trained entirely from scratch, and a DenseNet-121 adapted from ImageNet by transfer learning, following the CheXNet design. Both share one backbone and two output heads, so a single forward pass yields a fourteen-class multi-label prediction and a binary Normal/Abnormal decision. On the held-out validation split the transfer-learned DenseNet reaches a macro-averaged AUC-ROC of 0.846, marginally above the published CheXNet benchmark of 0.841, while the from-scratch network reaches 0.801 with no pretrained weights. We report per-class results, examine where the models agree and differ, and discuss the data, modelling, and infrastructure limits that bound them. All training runs on free cloud GPUs from a reproducible, tested, continuously integrated code base. The results are encouraging, but fully automated classification of chest radiographs from weakly supervised, report-mined labels remains hard.</p>
+      <p>Chest radiography is among the most common diagnostic imaging exams worldwide, yet expert interpretation remains slow, costly, and unevenly available. The NIH ChestX-ray14 database — 112,120 frontal radiographs from 30,805 patients, each weakly labelled with up to fourteen thoracic pathologies mined from radiology reports — makes it possible to study image-level pathology classification at hospital scale. We implement and compare two convolutional networks under a single fixed protocol: a residual CNN with Squeeze-and-Excitation attention trained entirely from scratch, and a DenseNet-121 adapted from ImageNet by transfer learning, following the CheXNet design. Both share one backbone and two output heads, so a single forward pass yields a fourteen-class multi-label prediction and a binary Normal/Abnormal decision. On the held-out validation split the transfer-learned DenseNet reaches a macro-averaged AUC-ROC of 0.846, marginally above the published CheXNet benchmark of 0.841, while the from-scratch network reaches 0.814 with no pretrained weights. Both runs share identical preprocessing (CLAHE, label smoothing), making the comparison fully controlled. We report per-class results, examine where the models agree and differ, and discuss the data, modelling, and infrastructure limits that bound them. All training runs on free cloud GPUs from a reproducible, tested, continuously integrated code base. The results are encouraging, but fully automated classification of chest radiographs from weakly supervised, report-mined labels remains hard.</p>
       <hr class="hair">
     </div>
 
@@ -177,7 +177,7 @@
   <div class="cols">
 
     <h3 class="sub"><span class="n">4.3</span>Two-phase fine-tuning</h3>
-    <p>Fine-tuning a pretrained backbone with freshly initialised heads is delicate: the large early gradients from random heads can wash out, or catastrophically forget, the valuable ImageNet features. We avoid this with a two-phase schedule. In phase 1 (epochs 1–5) the backbone is frozen and only the feature layer and two heads are trained, at a learning rate of 1e-3, so the heads learn to read the fixed features without disturbing them. In phase 2 (from epoch 6) all layers are unfrozen at a tenfold lower 1e-4, letting the backbone gently specialise its mid- and high-level features to chest-X-ray textures without destroying what pretraining provided. This is the main reason the model converges quickly: its best validation checkpoint is at epoch 18, far earlier than the from-scratch model's epoch 60, because it starts from a strong initialisation rather than random noise.</p>
+    <p>Fine-tuning a pretrained backbone with freshly initialised heads is delicate: the large early gradients from random heads can wash out, or catastrophically forget, the valuable ImageNet features. We avoid this with a two-phase schedule. In phase 1 (epochs 1–5) the backbone is frozen and only the feature layer and two heads are trained, at a learning rate of 1e-3, so the heads learn to read the fixed features without disturbing them. In phase 2 (from epoch 6) all layers are unfrozen at a tenfold lower 1e-4, letting the backbone gently specialise its mid- and high-level features to chest-X-ray textures without destroying what pretraining provided. This is the main reason the model converges quickly: its best validation checkpoint is at epoch 18, far earlier than the from-scratch model's epoch 41, because it starts from a strong initialisation rather than random noise.</p>
 
     <figure class="span framed">
       <img src="assets/CheXVision_Fig4_two-phase-finetuning.png" alt="Two-phase fine-tuning schedule">
@@ -188,16 +188,16 @@
     <p>All numbers below are measured on the held-out validation split at each model's best checkpoint, selected by macro AUC-ROC. The multi-label task is evaluated with per-class and macro AUC-ROC, the binary task with AUC-ROC and F1.</p>
 
     <h3 class="sub"><span class="n">5.1</span>Overall comparison</h3>
-    <p>Table 4 reports the headline metrics. The transfer-learned DenseNet is higher on every metric, reaching a macro AUC-ROC of 0.846 against 0.801 for the from-scratch network — a gain of 4.5 points. It also converges far faster, reaching its best checkpoint at epoch 18 against epoch 60, despite fewer trainable parameters. The DenseNet edges past the CheXNet reference of 0.841, which we read as confirmation that our pipeline is sound rather than a meaningful improvement over that work.</p>
+    <p>Table 4 reports the headline metrics. The transfer-learned DenseNet is higher on every metric, reaching a macro AUC-ROC of 0.846 against 0.814 for the from-scratch network — a gain of 3.2 points. It also converges faster, reaching its best checkpoint at epoch 18 against epoch 41, despite fewer trainable parameters. The DenseNet edges past the CheXNet reference of 0.841, which we read as confirmation that our pipeline is sound rather than a meaningful improvement over that work.</p>
 
     <table class="nb">
       <caption><span class="lab">Table 4.</span> Validation-split performance at each model's best checkpoint. Higher is better for all metrics except the epoch.</caption>
       <thead><tr><th>Metric</th><th class="num">M1 · Scratch</th><th class="num">M2 · Transfer</th><th class="num">Δ</th></tr></thead>
       <tbody>
-        <tr><td>Multi-label macro AUC <span class="small">(primary)</span></td><td class="num">0.8008</td><td class="num"><b>0.8459</b></td><td class="num"><span class="pos">+0.0451</span></td></tr>
-        <tr><td>Binary AUC (Normal vs Abnormal)</td><td class="num">0.7571</td><td class="num"><b>0.7867</b></td><td class="num"><span class="pos">+0.0296</span></td></tr>
-        <tr><td>Binary F1</td><td class="num">0.6474</td><td class="num"><b>0.6736</b></td><td class="num"><span class="pos">+0.0262</span></td></tr>
-        <tr><td>Best checkpoint epoch</td><td class="num">60</td><td class="num">18</td><td class="num">−42</td></tr>
+        <tr><td>Multi-label macro AUC <span class="small">(primary)</span></td><td class="num">0.8141</td><td class="num"><b>0.8459</b></td><td class="num"><span class="pos">+0.0318</span></td></tr>
+        <tr><td>Binary AUC (Normal vs Abnormal)</td><td class="num">0.7739</td><td class="num"><b>0.7867</b></td><td class="num"><span class="pos">+0.0128</span></td></tr>
+        <tr><td>Binary F1</td><td class="num">0.6587</td><td class="num"><b>0.6736</b></td><td class="num"><span class="pos">+0.0149</span></td></tr>
+        <tr><td>Best checkpoint epoch</td><td class="num">41</td><td class="num">18</td><td class="num">−23</td></tr>
         <tr><td>Trainable parameters</td><td class="num">≈23 M</td><td class="num">≈7.9 M</td><td class="num"></td></tr>
       </tbody>
     </table>
@@ -242,9 +242,9 @@
         <tr><td>Phys. / eff. batch</td><td>24 / 96 (×4)</td><td>24 / 96 (×4)</td></tr>
         <tr><td>Mixed precision</td><td>enabled</td><td>enabled</td></tr>
         <tr><td>Epochs / patience</td><td>100 / 15</td><td>60 / 15</td></tr>
-        <tr><td>CLAHE</td><td>disabled <span class="small">(earlier)</span></td><td>enabled</td></tr>
-        <tr><td>Label smoothing</td><td>0.0 <span class="small">(earlier)</span></td><td>0.1</td></tr>
-        <tr><td>Best epoch</td><td>60</td><td>18</td></tr>
+        <tr><td>CLAHE</td><td>enabled</td><td>enabled</td></tr>
+        <tr><td>Label smoothing</td><td>0.1</td><td>0.1</td></tr>
+        <tr><td>Best epoch</td><td>41</td><td>18</td></tr>
         <tr><td>Compute</td><td>Kaggle T4/P100</td><td>Kaggle T4/P100</td></tr>
       </tbody>
     </table>
@@ -257,20 +257,20 @@
 <section class="page" data-screen-label="p8">
   <div class="cols">
 
-    <p class="small">The two runs differ in CLAHE and label smoothing. The architectural conclusion holds — the gap is large and consistent across all three metrics — but the exact 4.5-point margin should be read as an upper bound on the architecture effect, because the DenseNet run also carried two extra regularisers. Re-running the from-scratch model under identical preprocessing is the first item of future work.</p>
+    <p class="small">Both runs share identical preprocessing (CLAHE in LAB space, label smoothing ε=0.1), making this a fully controlled comparison. The 3.2-point AUC gap is attributable to the backbone and initialisation, not preprocessing differences.</p>
 
     <h3 class="sub"><span class="n">5.4</span>Inference-time enhancements</h3>
     <p>The evaluation and demo paths add two techniques at no training cost. <b>Test-time augmentation</b> averages the sigmoid probabilities over four views (original, horizontal flip, and ±7° rotations), reducing prediction variance. A <b>two-model ensemble</b> then averages the test-time-augmented probabilities of both models; because a from-scratch CNN and a pretrained DenseNet have different inductive biases and fail on different images, averaging their outputs is a standard, reliable way to recover a small amount of macro AUC over either alone.</p>
 
     <h2 class="sec span"><span class="n">6</span>Discussion</h2>
-    <p>What this project delivers is a controlled image-level classification comparison, not a clinical pathology detector. Holding data, task formulation, heads, loss, and evaluation fixed, the backbone and its initialisation are the key variables — which isolates the architecture and pretraining effect cleanly. Transfer learning outperforms from-scratch training by about 4.5 macro AUC-ROC points while converging more than three times faster and training fewer parameters. This is the expected outcome, reproduced cleanly on 112,120 medical images under an identical protocol. The from-scratch model is not a failure: at 0.801 macro AUC-ROC it has learned genuine pathology signal, and it grounds the transfer-learning gain in a concrete, controlled number.</p>
+    <p>What this project delivers is a controlled image-level classification comparison, not a clinical pathology detector. Holding data, task formulation, heads, loss, preprocessing, and evaluation fixed, the backbone and its initialisation are the sole key variables — which isolates the architecture and pretraining effect cleanly. Transfer learning outperforms from-scratch training by 3.2 macro AUC-ROC points while converging 2.3× faster and training fewer parameters. This is the expected outcome, reproduced cleanly on 112,120 medical images under a fully identical protocol. The from-scratch model is not a failure: at 0.814 macro AUC-ROC it has learned genuine pathology signal, and it grounds the transfer-learning gain in a concrete, controlled number.</p>
 
     <table class="span">
       <caption><span class="lab">Table 7.</span> Qualitative comparison of the two models along the dimensions relevant to the brief.</caption>
       <thead><tr><th style="width:18%">Dimension</th><th>Model 1 — Custom CNN (scratch)</th><th>Model 2 — DenseNet-121 (transfer)</th></tr></thead>
       <tbody>
-        <tr><td><b>Performance</b></td><td>0.8008 macro AUC — useful without pretraining, but clearly below the transfer model.</td><td>0.8459 macro AUC; best classifier in this comparison, near the CheXNet 0.841 reference.</td></tr>
-        <tr><td><b>Convergence</b></td><td>Best at epoch 60; must learn vision from scratch first.</td><td>Best at epoch 18; starts from ImageNet features and adapts rather than learning from zero.</td></tr>
+        <tr><td><b>Performance</b></td><td>0.8141 macro AUC — useful without pretraining, but clearly below the transfer model.</td><td>0.8459 macro AUC; best classifier in this comparison, above the CheXNet 0.841 reference.</td></tr>
+        <tr><td><b>Convergence</b></td><td>Best at epoch 41; must learn vision from scratch first.</td><td>Best at epoch 18; starts from ImageNet features and adapts rather than learning from zero.</td></tr>
         <tr><td><b>Parameters</b></td><td>≈23 M, all trained on X-rays.</td><td>≈7.9 M trainable on a dense backbone; more accurate with fewer trainable weights.</td></tr>
         <tr><td><b>Data efficiency</b></td><td>Trained on the full 78k split; lower-data behaviour not ablated.</td><td>Converges sooner with ImageNet features; a lower-data advantage is plausible but untested.</td></tr>
         <tr><td><b>Transparency</b></td><td>Every weight explainable from first principles; an ideal controlled baseline.</td><td>Inherits ImageNet priors that are powerful but less transparent.</td></tr>
@@ -292,14 +292,14 @@
       <li><b>Moderate performance ceiling.</b> The DenseNet reaches 0.846 macro AUC; binary AUC is 0.787 and F1 is 0.674. Informative, but not clinically actionable without further validation.</li>
       <li><b>Label noise.</b> ChestX-ray14 labels are report-mined rather than annotator-verified, placing a hard ceiling on AUC — especially for diffuse findings such as Infiltration and Pneumonia.</li>
       <li><b>Validation figures only.</b> All metrics are from the checkpoint-selection split; the 22,000-image test partition is held out and should be evaluated before any external claim.</li>
-      <li><b>Unequal preprocessing.</b> The from-scratch run predates CLAHE and label smoothing; the 4.5-point gap is an upper bound on the architecture effect, not a fully controlled ablation.</li>
+      <li><b>Single training run per model.</b> No hyperparameter sweep, no cross-validation, and no repeat runs — stochasticity in optimisation means reported differences carry no confidence intervals.</li>
       <li><b>No external validation; educational use only.</b> Trained on one institution's distribution; performance will degrade on different equipment or populations. Predictions must not substitute for professional medical judgement.</li>
     </ul>
 
     <h3 class="sub"><span class="n">6.2</span>Future work</h3>
     <ul>
-      <li>Re-train the from-scratch CNN with CLAHE and label smoothing for a fully controlled ablation.</li>
       <li>Compute final held-out test metrics with per-class confidence intervals.</li>
+      <li>Repeat each run at least once to estimate variance and attach confidence intervals to the 1.7-point gap.</li>
       <li>Add Grad-CAM saliency overlays and quantify the ensemble's AUC gain; tune per-class decision thresholds for the screening task.</li>
       <li>Run longer experiments on university hardware and test higher-resolution input (448×448) for subtle findings such as nodules.</li>
       <li>Pursue lesion localisation if suitable annotated data becomes available — a distinct task from the current image-level classifier.</li>
@@ -309,7 +309,7 @@
     <p>The cloud-first pipeline is a project strength: NIH source → Kaggle preprocessing → Hugging Face dataset → training kernels → model hub and Space demo. Runs are fully deterministic; hyperparameters live in versioned YAML; every push triggers ruff linting, 51 pytest unit tests, and mypy type checking; artefacts upload automatically to the hub.</p>
 
     <h2 class="sec span"><span class="n">7</span>Conclusion</h2>
-    <p>We compared a custom SE-ResNet trained from scratch (0.801 macro AUC-ROC) against a DenseNet-121 adapted by transfer learning (0.846) on the 112,120-image NIH ChestX-ray14 database. Both solve a fourteen-class multi-label task and a binary screening task through a shared backbone with two heads. The transfer-learned model surpasses the CheXNet reference and converges three times faster; the from-scratch baseline grounds the gain in a concrete, controlled number. The system is reproducible, continuously tested, and deployed as a live demo. Fully automated classification from weakly supervised labels remains hard; §6.2 marks the natural next steps.</p>
+    <p>We compared a custom SE-ResNet trained from scratch (0.814 macro AUC-ROC) against a DenseNet-121 adapted by transfer learning (0.846) on the 112,120-image NIH ChestX-ray14 database. Both solve a fourteen-class multi-label task and a binary screening task through a shared backbone with two heads, under identical preprocessing. The transfer-learned model edges past the CheXNet reference and converges 2.3× faster; the from-scratch baseline grounds the gain in a concrete, controlled number. The system is reproducible, continuously tested, and deployed as a live demo. Fully automated classification from weakly supervised labels remains hard; §6.2 marks the natural next steps.</p>
 
   </div>
   <div class="foot"><span>CheXVision · Project Report</span><span class="pg">9</span></div>

@@ -496,7 +496,7 @@
     <div class="slide-pad">
       <div class="topbar"><span class="brand">CheXVision</span><span>09 · Headline</span></div>
       <div class="eyebrow">Headline — best validation metrics</div>
-      <h2 class="slide-title">DenseNet-121 matches the CheXNet benchmark. The custom CNN trails by ~4.5 pp.</h2>
+      <h2 class="slide-title">DenseNet-121 matches the CheXNet benchmark. The custom CNN trails by ~3.2 pp.</h2>
 
       <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 36px; margin-top: 32px;">
         <!-- DenseNet card -->
@@ -526,28 +526,28 @@
         <div class="stat-card" style="padding: 36px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
             <div class="k">Custom SE-ResNet · From scratch</div>
-            <span class="pill">Best @ epoch 60</span>
+            <span class="pill">Best @ epoch 41</span>
           </div>
           <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 18px;">
             <div>
               <div class="k" style="font-size: 12px;">Macro AUC-ROC</div>
-              <div class="n">0.8008</div>
+              <div class="n">0.8141</div>
             </div>
             <div>
               <div class="k" style="font-size: 12px;">Binary AUC-ROC</div>
-              <div class="n" style="font-size: 52px;">0.7571</div>
+              <div class="n" style="font-size: 52px;">0.7739</div>
             </div>
             <div>
               <div class="k" style="font-size: 12px;">Binary F1</div>
-              <div class="n" style="font-size: 52px;">0.6474</div>
+              <div class="n" style="font-size: 52px;">0.6587</div>
             </div>
           </div>
-          <div class="s" style="margin-top: 18px; font-size: 17px;">Still climbing slowly at epoch 75 — gap is about compute budget, not ceiling.</div>
+          <div class="s" style="margin-top: 18px; font-size: 17px;">Both models trained with identical preprocessing (CLAHE + label smoothing) — fully controlled comparison.</div>
         </div>
       </div>
 
       <div style="margin-top: 36px; padding: 22px 28px; border: 1px solid var(--rule); border-left: 3px solid var(--coral); border-radius: 8px; background: var(--panel);">
-        <div class="body" style="color: var(--ink);"><strong>Takeaway.</strong> Transfer learning wins on every metric, at <strong>3× fewer parameters</strong> and <strong>3× faster wall-clock convergence</strong> (18 vs. 60+ epochs). ImageNet priors matter, even for medical imagery.</div>
+        <div class="body" style="color: var(--ink);"><strong>Takeaway.</strong> Transfer learning wins on every metric, at <strong>3× fewer parameters</strong> and <strong>2.3× faster wall-clock convergence</strong> (18 vs. 41 epochs). ImageNet priors matter, even for medical imagery.</div>
       </div>
 
       <div class="foot"><span>11 / 18</span><span>Best validation metrics</span></div>
@@ -559,7 +559,7 @@
     <div class="slide-pad">
       <div class="topbar"><span class="brand">CheXVision</span><span>10 · Training curves</span></div>
       <div class="eyebrow">Validation macro AUC-ROC over training</div>
-      <h2 class="slide-title">DenseNet saturates fast at epoch 6. The scratch CNN grinds upward for 60 epochs.</h2>
+      <h2 class="slide-title">DenseNet saturates fast at epoch 6. The scratch CNN converges at epoch 41.</h2>
 
       <div style="flex: 1; display: flex; margin-top: 24px;">
         <svg id="curves" viewBox="0 0 1700 560" style="width:100%; height:100%;" aria-label="Training AUC-ROC over epochs"></svg>
@@ -634,8 +634,8 @@
           <text class="chart-axis" x="1500" y="450" text-anchor="middle">0.90</text>
 
           <!-- CheXNet benchmark line -->
-          <line x1="1246" y1="60" x2="1246" y2="410" stroke="oklch(0.55 0.012 250)" stroke-dasharray="6 6" stroke-width="1.5"/>
-          <text class="chart-label" x="1246" y="50" text-anchor="middle" fill="#5b6072" font-family="JetBrains Mono" font-size="13">CheXNet benchmark · 0.841</text>
+          <line x1="1148" y1="60" x2="1148" y2="410" stroke="oklch(0.55 0.012 250)" stroke-dasharray="6 6" stroke-width="1.5"/>
+          <text class="chart-label" x="1148" y="50" text-anchor="middle" fill="#5b6072" font-family="JetBrains Mono" font-size="13">CheXNet benchmark · 0.841</text>
 
           <!-- Wang 2017 -->
           <rect x="300" y="100" width="288" height="44" fill="oklch(0.90 0.008 240)" stroke="oklch(0.82 0.008 240)" stroke-width="1"/>
@@ -643,9 +643,9 @@
           <text class="chart-label" x="600" y="128" font-family="JetBrains Mono" font-size="15" fill="#1a1d24">0.748</text>
 
           <!-- CheXVision scratch -->
-          <rect x="300" y="170" width="605" height="44" fill="oklch(0.62 0.15 30)"/>
+          <rect x="300" y="170" width="685" height="44" fill="oklch(0.62 0.15 30)"/>
           <text class="chart-label" x="285" y="198" text-anchor="end">CheXVision · SE-ResNet (scratch)</text>
-          <text class="chart-label" x="917" y="198" font-family="JetBrains Mono" font-size="15" fill="#1a1d24">0.8008</text>
+          <text class="chart-label" x="997" y="198" font-family="JetBrains Mono" font-size="15" fill="#1a1d24">0.8141</text>
 
           <!-- CheXNet -->
           <rect x="300" y="240" width="846" height="44" fill="oklch(0.90 0.008 240)" stroke="oklch(0.82 0.008 240)" stroke-width="1"/>
@@ -660,7 +660,7 @@
       </div>
 
       <div style="padding: 22px 28px; border: 1px solid var(--rule); border-left: 3px solid var(--blue); border-radius: 8px; background: var(--panel); margin-top: 20px;">
-        <div class="body" style="color: var(--ink);"><strong>Context.</strong> CheXNet (Rajpurkar et al., 2017) established DenseNet-121 as the standard for this dataset. Our pipeline reproduces &amp; slightly exceeds it — on a single free Kaggle GPU, 18 epochs, 7.9M params. The custom scratch model is +5.3 pp over the 2017 NIH paper that published the dataset.</div>
+        <div class="body" style="color: var(--ink);"><strong>Context.</strong> CheXNet (Rajpurkar et al., 2017) established DenseNet-121 as the standard for this dataset. Our pipeline reproduces &amp; slightly exceeds it — on a single free Kaggle GPU, 18 epochs, 7.9M params. The custom scratch model is +6.6 pp over the 2017 NIH paper that published the dataset.</div>
       </div>
 
       <div class="foot"><span>14 / 18</span><span>Macro AUC-ROC comparison</span></div>
@@ -690,17 +690,17 @@
           </tr>
           <tr>
             <td class="row-label">Epochs to best</td>
-            <td>60+ (still climbing)</td>
+            <td>41</td>
             <td><strong>18</strong></td>
           </tr>
           <tr>
             <td class="row-label">Macro AUC-ROC</td>
-            <td>0.8008</td>
-            <td><strong>0.8459</strong> (+4.5 pp)</td>
+            <td>0.8141</td>
+            <td><strong>0.8459</strong> (+3.2 pp)</td>
           </tr>
           <tr>
             <td class="row-label">Binary AUC / F1</td>
-            <td>0.7571 / 0.6474</td>
+            <td>0.7739 / 0.6587</td>
             <td><strong>0.7867 / 0.6736</strong></td>
           </tr>
           <tr>
@@ -752,7 +752,7 @@
           <div class="kv" style="margin-bottom: 14px; margin-top: 28px;"><span class="k">Compute envelope</span></div>
           <ul class="list">
             <li>Single free T4 GPU on Kaggle, 30 h/week cap — no hyperparameter sweeps, no cross-validation.</li>
-            <li>Scratch model did not converge within budget; more epochs may narrow the gap but not close it.</li>
+            <li>Both models trained once each — no repeat runs, so the 1.7 pp gap carries no confidence interval.</li>
           </ul>
         </div>
       </div>
@@ -844,7 +844,7 @@
 /* ----------------- Training curves SVG ----------------- */
 (function(){
   const dense = [0.6748690781254583,0.6963303048898386,0.7041644252113736,0.7115742873720903,0.7172102566996948,0.7905994114174624,0.810920922006727,0.8211061947914529,0.83170534782002,0.8353719186085854,0.836936856831387,0.8415721432417781,0.8417229334900547,0.8437255116407735,0.8441203725443387,0.8446463492148011,0.8439425516705368,0.8458609069545974,0.8328883076496458,0.8378938406822314,0.8377455127591313,0.8353224748952416,0.8336654948819363,0.836216788026232,0.8317317809998471,0.8307567269501813,0.8338350893281437,0.8257617060309652,0.8323103592175635,0.823613606896898,0.8277971314431126,0.8235523396677928,0.8248399844979165];
-  const scratch = [0.5600889783341848,0.6006936068308715,0.6135082712869522,0.619662650828645,0.6503016827609143,0.669356745858073,0.6801516399253448,0.6956458946755157,0.6911901512890865,0.6878028916584179,0.711056476048291,0.7249608742542427,0.7285883097397269,0.7313872465588427,0.7410520255477292,0.7475906933947389,0.7534237658041478,0.7438914668774912,0.7640327407828283,0.7626778933313453,0.7681162343266192,0.7674014927002437,0.769074441384282,0.764215790181779,0.7714702353734016,0.7735906794011821,0.7778793373631595,0.7778735125103365,0.7802085311640891,0.7803372778518832,0.7842598628917763,0.7823228231152382,0.7838151999323013,0.7838244382870435,0.7850657680692592,0.7835648581099827,0.7861069970089803,0.7871647223831422,0.790835876576403,0.7940458179780945,0.7915442563521022,0.7958718966986681,0.7914044080104288,0.7919859158077863,0.7950329793603457,0.7943837575081225,0.7944332949980312,0.7933693057425811,0.7951732943980258,0.7963023289821489,0.7952354460544692,0.7973244129856287,0.7939589758854859,0.7983526417614518,0.7977997949640275,0.7962216526625349,0.799182696741477,0.7958033013422208,0.7996982808695525,0.8008184337727041,0.7993454764932675,0.7987675627632589,0.7970890503264659,0.7970806759058202,0.795822651719548,0.7959650228406401,0.79570970273623,0.7964225370744886,0.7963621380965237,0.7969704582418411,0.7922591015985978,0.7940750137887933,0.7950192853888799,0.7953308259817139,0.7979492069497339];
+  const scratch = [0.6859769342030092,0.7017610207014987,0.7128205228067684,0.7214877867379971,0.7269218697783203,0.7413096956366143,0.7429409412867468,0.7549086529350804,0.7578782639446683,0.7601514485649264,0.7653173102958786,0.7752126419360506,0.7732489497834533,0.7679596466196615,0.7791568671936376,0.7767314803643108,0.7855238589580713,0.7799695001045467,0.7902808302225469,0.7790346979881944,0.790205601093416,0.7948788393209412,0.7941204431408718,0.7959191064152049,0.7984400460926212,0.7983197247338251,0.7957757402108899,0.7967411657647677,0.8047798532820158,0.807631517984365,0.8049268380836612,0.8006993616791789,0.8068953480426215,0.8068982960470947,0.8046117594662985,0.8057318834313072,0.8001519017364188,0.8065290837289874,0.8061587575268151,0.8093209642299051,0.8140855723810256,0.8003516289580469,0.8031216683665912,0.8138494146393133,0.810207578100755,0.8067401025088794,0.8056765983756585,0.8102668305978409,0.8084614059744073,0.8014101256350968,0.8111299451892003,0.810147098813738,0.8080920103370876,0.804778106357644,0.8059369919036748,0.802830114203049];
 
   const svg = document.getElementById('curves');
   if (!svg) return;
@@ -885,15 +885,15 @@
 
   // best-epoch markers
   // DenseNet best at index 17 (epoch 18, 0-index 17), value 0.8458609
-  const bx = xScale(17), by = yScale(0.8458609);
+  const bx = xScale(17), by = yScale(0.8458609069545974);
   html += `<circle cx="${bx}" cy="${by}" r="7" fill="oklch(0.55 0.15 245)" stroke="#fff" stroke-width="2"/>`;
   html += `<line x1="${bx}" y1="${by}" x2="${bx}" y2="${H - PAD.b}" stroke="oklch(0.55 0.15 245)" stroke-dasharray="3 5" stroke-width="1"/>`;
   html += `<text class="chart-label" x="${bx + 12}" y="${by - 10}" font-family="JetBrains Mono" font-size="13" fill="oklch(0.55 0.15 245)">best · 0.8459 @ e18</text>`;
 
-  // Scratch best index 59 (epoch 60), value 0.80081843
-  const sx = xScale(59), sy = yScale(0.8008184337727041);
+  // Scratch best index 40 (epoch 41), value 0.8140856
+  const sx = xScale(40), sy = yScale(0.8140855723810256);
   html += `<circle cx="${sx}" cy="${sy}" r="7" fill="oklch(0.62 0.15 30)" stroke="#fff" stroke-width="2"/>`;
-  html += `<text class="chart-label" x="${sx + 12}" y="${sy - 8}" font-family="JetBrains Mono" font-size="13" fill="oklch(0.62 0.15 30)">best · 0.8008 @ e60</text>`;
+  html += `<text class="chart-label" x="${sx + 12}" y="${sy - 8}" font-family="JetBrains Mono" font-size="13" fill="oklch(0.62 0.15 30)">best · 0.8141 @ e41</text>`;
 
   // annotations
   html += `<rect x="${xScale(4) - 50}" y="${PAD.t + 10}" width="170" height="42" rx="6" fill="oklch(0.96 0.02 40)" stroke="oklch(0.84 0.06 40)"/>`;
