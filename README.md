@@ -10,9 +10,13 @@ pinned: true
 python_version: "3.10"
 ---
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/arudaev/chexvision/main/.github/banner.png" alt="CheXVision – a hand-drawn banner: a laptop showing the training pipeline beside a chest X-ray on a lightbox" width="100%">
+</p>
+
 # CheXVision
 
-**Large-Scale Chest X-Ray Pathology Detection** — Deep Learning & Big Data Project
+**Large-Scale Chest X-Ray Pathology Detection** – Deep Learning & Big Data Project
 
 [![CI](https://github.com/arudaev/chexvision/actions/workflows/ci.yml/badge.svg)](https://github.com/arudaev/chexvision/actions/workflows/ci.yml)
 [![Deck](https://img.shields.io/badge/Slides-GitHub%20Pages-0f766e?logo=github)](https://arudaev.github.io/chexvision/)
@@ -38,7 +42,7 @@ python_version: "3.10"
 
 ## Overview
 
-CheXVision tackles **automated chest X-ray pathology detection** at scale using the [NIH Chest X-ray14](https://www.nih.gov/news-events/news-releases/nih-clinical-center-provides-one-largest-publicly-available-chest-x-ray-datasets-scientific-community) dataset — 112,120 frontal-view X-ray images labeled with 14 pathological conditions.
+CheXVision tackles **automated chest X-ray pathology detection** at scale using the [NIH Chest X-ray14](https://www.nih.gov/news-events/news-releases/nih-clinical-center-provides-one-largest-publicly-available-chest-x-ray-datasets-scientific-community) dataset – 112,120 frontal-view X-ray images labeled with 14 pathological conditions.
 
 We implement and compare two deep learning approaches on two distinct tasks:
 
@@ -50,7 +54,7 @@ We implement and compare two deep learning approaches on two distinct tasks:
 
 > **A third, "true from-scratch" model** lives in the [`src/numpy_net`](src/numpy_net) git
 > submodule ([`arudaev/chexvision-mini`](https://github.com/arudaev/chexvision-mini)): a pure-NumPy
-> MLP with hand-written forward and backprop — **no PyTorch, no autograd, CPU-only** — for the binary
+> MLP with hand-written forward and backprop – **no PyTorch, no autograd, CPU-only** – for the binary
 > task. It is a *fundamentals* model (it demonstrates the underlying maths, verified by gradient
 > checking; it does not chase headline accuracy). Terminology note: Model 1 is "from scratch" in the
 > sense of *trained from random init* (still PyTorch); the NumPy net is "from scratch" in the sense of
@@ -58,10 +62,10 @@ We implement and compare two deep learning approaches on two distinct tasks:
 
 ### Why This Matters
 
-- **112,120 images** — true big-data scale requiring efficient data pipelines
-- **Medical AI** — directly applicable to clinical decision support
-- **CheXNet** (Rajpurkar et al., 2017) — landmark paper achieving radiologist-level performance on this exact dataset
-- **From-scratch vs. transfer learning** — rigorous comparison under identical evaluation conditions
+- **112,120 images** – true big-data scale requiring efficient data pipelines
+- **Medical AI** – directly applicable to clinical decision support
+- **CheXNet** (Rajpurkar et al., 2017) – landmark paper achieving radiologist-level performance on this exact dataset
+- **From-scratch vs. transfer learning** – rigorous comparison under identical evaluation conditions
 
 ---
 
@@ -73,11 +77,11 @@ We implement and compare two deep learning approaches on two distinct tasks:
 | Binary AUC (Normal vs Abnormal) | 0.7739 | **0.7867** | +0.013 |
 | Binary F1 | 0.6587 | **0.6736** | +0.015 |
 | Best checkpoint epoch | 41 | **18** | −23 |
-| Trainable parameters | ≈23 M | ≈7.9 M | — |
+| Trainable parameters | ≈23 M | ≈7.9 M | – |
 
 *Validation split at each model's best checkpoint. CheXNet reference (Rajpurkar et al., 2017): 0.841 macro AUC-ROC. Both models trained with identical preprocessing (CLAHE + label smoothing ε=0.1).*
 
-**Per-class AUC-ROC (DenseNet-121):** strongest on high-contrast, globally-shaped findings — Edema 0.926, Hernia 0.924, Emphysema 0.911, Cardiomegaly 0.901; weakest on diffuse, label-noisy findings — Pneumonia 0.740, Infiltration 0.713. Both models follow the same class-difficulty ranking, indicating the ceiling is set by data quality, not architecture.
+**Per-class AUC-ROC (DenseNet-121):** strongest on high-contrast, globally-shaped findings – Edema 0.926, Hernia 0.924, Emphysema 0.911, Cardiomegaly 0.901; weakest on diffuse, label-noisy findings – Pneumonia 0.740, Infiltration 0.713. Both models follow the same class-difficulty ranking, indicating the ceiling is set by data quality, not architecture.
 
 The transfer-learned DenseNet surpasses the CheXNet reference and converges 2.3× faster while training fewer parameters. The from-scratch model (0.814 macro AUC) provides a controlled baseline under identical preprocessing, quantifying the value of ImageNet pretraining on medical imagery.
 
@@ -139,7 +143,7 @@ chexvision/
 │   └── deploy-space.yml          # Auto-deploy app/ to HF Space on push to main
 ├── src/
 │   ├── data/
-│   │   ├── dataset.py            # ChestXrayDataset — PyTorch Dataset, label encoding
+│   │   ├── dataset.py            # ChestXrayDataset – PyTorch Dataset, label encoding
 │   │   ├── transforms.py         # Train / eval augmentation pipelines
 │   │   ├── download.py           # snapshot_download wrapper for HF dataset
 │   │   └── resize_320_pipeline.py  # Kaggle kernel: NIH source → 320px parquet shards
@@ -156,7 +160,7 @@ chexvision/
 │   └── numpy_net/               # git submodule → arudaev/chexvision-mini
 │                                #   pure-NumPy from-scratch MLP (package: chexvision_mini)
 ├── scripts/
-│   ├── eda.py                    # EDA — streams metadata from HF, saves plots locally
+│   ├── eda.py                    # EDA – streams metadata from HF, saves plots locally
 │   ├── dispatch.py               # Dispatch Kaggle kernels; build + embed project bundle
 │   ├── push_models.py            # Manual model upload to HF Hub (recovery path)
 │   └── generate_diagram_pngs.py  # Render Mermaid diagrams → PNG via Playwright
@@ -169,7 +173,7 @@ chexvision/
 │   ├── scratch.yaml              # Overrides for custom CNN
 │   └── transfer.yaml             # Overrides for DenseNet-121
 ├── app/
-│   └── app.py                    # Streamlit demo — loads models from HF Hub
+│   └── app.py                    # Streamlit demo – loads models from HF Hub
 ├── tests/                        # pytest unit tests (51 tests across 9 modules)
 │   ├── test_dataset.py
 │   ├── test_metrics.py
@@ -238,7 +242,7 @@ The kernels automatically:
 3. Train the model and save the best checkpoint by validation AUC-ROC
 4. Upload the checkpoint, training history JSON, config, and model card to HF Hub
 
-**Prerequisite — one-time setup**: create a **private** Kaggle dataset named `chexvision-secrets` (slug `hlexnc/chexvision-secrets`) containing a single file `hf_token.txt` with your HF token. Both kernel-metadata files declare this dataset as a `dataset_sources` entry, so the token is available in every API-pushed kernel without touching the Secrets UI.
+**Prerequisite – one-time setup**: create a **private** Kaggle dataset named `chexvision-secrets` (slug `hlexnc/chexvision-secrets`) containing a single file `hf_token.txt` with your HF token. Both kernel-metadata files declare this dataset as a `dataset_sources` entry, so the token is available in every API-pushed kernel without touching the Secrets UI.
 
 ### 5. Run Demo Locally
 
@@ -248,7 +252,7 @@ streamlit run app/app.py
 
 Or visit the live Space: [arudaev/chexvision-demo](https://huggingface.co/spaces/arudaev/chexvision-demo)
 
-The app loads trained checkpoints directly from HF Hub — no local files needed. It shows "No trained models available yet" until training completes.
+The app loads trained checkpoints directly from HF Hub – no local files needed. It shows "No trained models available yet" until training completes.
 
 ### 6. Manual Model Upload (recovery path)
 
@@ -263,7 +267,7 @@ python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.
 
 ## Dataset
 
-**NIH Chest X-ray14** — hosted at [`arudaev/chest-xray-14-320`](https://huggingface.co/datasets/arudaev/chest-xray-14-320)
+**NIH Chest X-ray14** – hosted at [`arudaev/chest-xray-14-320`](https://huggingface.co/datasets/arudaev/chest-xray-14-320)
 
 - **112,120** frontal-view chest X-ray images
 - **14 pathology labels**: Atelectasis, Cardiomegaly, Consolidation, Edema, Effusion, Emphysema, Fibrosis, Hernia, Infiltration, Mass, Nodule, Pleural Thickening, Pneumonia, Pneumothorax
@@ -285,10 +289,10 @@ python scripts/push_models.py --checkpoint checkpoints/CheXVision-DenseNet_best.
 
 Both models share the same input pipeline and training regularisation:
 
-- **CLAHE** (Contrast Limited Adaptive Histogram Equalisation): applied in LAB colour space before any augmentation — enhances local contrast for low-contrast findings (Nodule, Infiltration, Pneumonia) without global brightness shifts
-- **Label smoothing** (ε = 0.1): positive targets → 0.9, negative targets → 0.05 — regularises against noisy NIH patient-level labels
+- **CLAHE** (Contrast Limited Adaptive Histogram Equalisation): applied in LAB colour space before any augmentation – enhances local contrast for low-contrast findings (Nodule, Infiltration, Pneumonia) without global brightness shifts
+- **Label smoothing** (ε = 0.1): positive targets → 0.9, negative targets → 0.05 – regularises against noisy NIH patient-level labels
 
-### Model 1 — Custom CNN (Trained from Random Init)
+### Model 1 – Custom CNN (Trained from Random Init)
 
 A ResNet-50-equivalent architecture built without any pretrained weights:
 
@@ -299,7 +303,7 @@ A ResNet-50-equivalent architecture built without any pretrained weights:
 - **Loss**: per-label weighted binary cross-entropy (`pos_weight` per class)
 - **Optimizer**: AdamW + cosine annealing LR; batch size 24 + gradient accumulation ×4 = effective batch 96
 
-### Model 2 — DenseNet-121 Transfer Learning
+### Model 2 – DenseNet-121 Transfer Learning
 
 Following the CheXNet approach (Rajpurkar et al., 2017):
 
@@ -317,8 +321,8 @@ Following the CheXNet approach (Rajpurkar et al., 2017):
 - Per-class AUC-ROC, F1, precision, recall
 - Binary AUC-ROC and F1 for the normal/abnormal task
 - Confusion matrices (binary task)
-- **Test-Time Augmentation (TTA)**: averages predictions over 4 views (original, h-flip, rotate ±7°) — reduces variance with zero training cost
-- **Ensemble**: averages TTA probabilities from both models — the two architectures fail on different examples, so combining them consistently improves macro AUC
+- **Test-Time Augmentation (TTA)**: averages predictions over 4 views (original, h-flip, rotate ±7°) – reduces variance with zero training cost
+- **Ensemble**: averages TTA probabilities from both models – the two architectures fail on different examples, so combining them consistently improves macro AUC
 - Grad-CAM heatmaps for qualitative interpretability
 
 ---
@@ -365,7 +369,7 @@ To report a vulnerability, please use [GitHub Private Security Advisories](https
 
 ## Team
 
-**BIG D(ATA)** — Deep Learning & Big Data, AIN program
+**BIG D(ATA)** – Deep Learning & Big Data, AIN program
 
 ---
 
@@ -381,4 +385,4 @@ To report a vulnerability, please use [GitHub Private Security Advisories](https
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT – see [LICENSE](LICENSE) for details.
